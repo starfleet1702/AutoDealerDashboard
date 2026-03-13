@@ -53,11 +53,18 @@ export async function fetchDashboard() {
     // cash & bank balances from cash_ledger
     const { data: ledgerData, error: ledgerErr } = await supabase.from('cash_ledger').select('account,entry_type,amount');
     if (ledgerErr) throw ledgerErr;
+    console.log('cash_ledger for cash calculation:', ledgerData);
     let cash = 0, bank = 0;
     (ledgerData || []).forEach(l => {
       const amt = Number(l.amount || 0);
-      if (l.account === 'cash') cash += (l.entry_type === 'credit' ? amt : -amt);
-      if (l.account === 'bank') bank += (l.entry_type === 'credit' ? amt : -amt);
+      if (l.account === 'cash') {
+        if (l.entry_type === 'credit') cash += amt;
+        else if (l.entry_type === 'debit') cash -= amt;
+      }
+      if (l.account === 'bank') {
+        if (l.entry_type === 'credit') bank += amt;
+        else if (l.entry_type === 'debit') bank -= amt;
+      }
     });
 
     // receivables & payables pending sums
@@ -142,9 +149,13 @@ window.dashboard = function(){
     avgProfitPerBike: 0,
     recentSales: [],
     alerts: [],
+    cardsLoading: true,
+    cashBankForm: { account:'cash', entry_type:'credit', amount:null, date:new Date().toISOString().slice(0,10), notes:'', status:'' },
     async load(){
+      this.cardsLoading = true;
       try{
         const d = await fetchDashboard();
+        this.cardsLoading = false;
         this.cards.find(c=>c.key==='inventory').value = d.inventoryValue;
         this.cards.find(c=>c.key==='cash').value = d.cash;
         this.cards.find(c=>c.key==='bank').value = d.bank;
@@ -159,6 +170,35 @@ window.dashboard = function(){
         this.alerts = d.alerts;
       }catch(e){
         console.error('Failed to load dashboard', e);
+      }
+    },
+    async onCashBankAdjust(){
+      this.cashBankForm.status = '';
+      if (!this.cashBankForm.amount || this.cashBankForm.amount <= 0) {
+        this.cashBankForm.status = 'Error: Enter valid amount';
+        return;
+      }
+      try {
+        const supabase = await getSupabaseClient();
+        const payload = {
+          account: this.cashBankForm.account,
+          entry_type: this.cashBankForm.entry_type,
+          amount: Number(Number(this.cashBankForm.amount).toFixed(2)),
+          date: this.cashBankForm.date,
+          notes: this.cashBankForm.notes || null
+        };
+        const { error } = await supabase.from('cash_ledger').insert([payload]);
+        if (error) {
+          this.cashBankForm.status = 'Error: ' + error.message;
+          return;
+        }
+        this.cashBankForm.status = 'Entry added';
+        this.cashBankForm.amount = null;
+        this.cashBankForm.notes = '';
+        // Optionally reload dashboard cards
+        await this.load();
+      } catch (e) {
+        this.cashBankForm.status = 'Error: ' + (e.message || 'Failed to add entry');
       }
     },
     formatCurrency(v){

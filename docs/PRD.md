@@ -311,6 +311,21 @@ Payables
 
 
 
+## Manual Cash/Bank Adjustment
+
+Dealers can manually update cash in hand or bank balance by creating a ledger entry:
+
+- Go to Dashboard → Cash/Bank Adjustment
+- Enter:
+  - Account: cash or bank
+  - Entry type: credit (money in) or debit (money out)
+  - Amount
+  - Date
+  - Notes (optional)
+- System inserts a new row in `cash_ledger` table
+
+All cash/bank changes (including opening balance, deposits, withdrawals) are tracked via ledger entries. Balances are always computed from the ledger.
+
 # 9. Core Calculations
 
 

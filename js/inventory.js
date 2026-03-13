@@ -41,7 +41,8 @@ window.handleAddBike = async ({ bike, setError, setSuccess, setLoading }) => {
       status: bike.status || 'in_stock',
       purchase_date: bike.purchase_date || null,
       sell_date: bike.sell_date || null,
-      notes: bike.notes || null
+      notes: bike.notes || null,
+      registration_number: bike.registration_number || null
     };
     const { data: inserted, error: insertErr } = await supabase.from('bikes').insert(payload).select().single();
     if (insertErr) {
@@ -77,33 +78,121 @@ window.inventory = function(){
     error: '',
     success: '',
     form: {
-      model: '', year: new Date().getFullYear(), color:'', buy_price: null, dealer:'', status:'in_stock', purchase_date: new Date().toISOString().slice(0,10), sell_date:'', notes:'', costs: []
+      model: '',
+      year: '', // Default blank
+      color: '',
+      buy_price: null,
+      dealer: '',
+      status: 'in_stock',
+      purchase_date: new Date().toISOString().slice(0,10),
+      sell_date: '',
+      notes: '',
+      costs: [],
+      registration_number: ''
     },
+    modelHistory: JSON.parse(localStorage.getItem('modelHistory')||'[]'),
+    colorHistory: JSON.parse(localStorage.getItem('colorHistory')||'[]'),
+    dealerHistory: JSON.parse(localStorage.getItem('dealerHistory')||'[]'),
+    editingId: null,
     async load(){
       const supabase = await getSupabaseClient();
-        if (!supabase) {
-          this.error = 'Supabase client not configured. Cannot load inventory.';
-          this.bikes = [];
-          return;
+      if (!supabase) {
+        this.error = 'Supabase client not configured. Cannot load inventory.';
+        this.bikes = [];
+        return;
+      }
+      try{
+        const { data, error } = await supabase.from('bikes').select('id,model,buy_price,status,dealer,color,year,registration_number,purchase_date').order('purchase_date', { ascending: false });
+        console.log('Supabase bikes query result:', { data, error });
+        if (error) throw error;
+        const bikes = data || [];
+
+        // fetch costs for these bikes and compute total_cost = buy_price + SUM(costs)
+        const ids = bikes.map(b => b.id).filter(Boolean);
+        let costs = [];
+        if (ids.length) {
+          const { data: costData, error: costErr } = await supabase.from('bike_costs').select('bike_id,amount').in('bike_id', ids);
+          if (costErr) throw costErr;
+          costs = costData || [];
         }
-        try{
-          const { data, error } = await supabase.from('bikes').select('id,model,buy_price,status,dealer');
-          if (error) throw error;
-          this.bikes = data || [];
-        }catch(e){
-          console.error('Failed to load bikes from Supabase', e);
-          this.error = e.message || 'Failed to load bikes';
-          this.bikes = [];
-        }
+        const costByBike = {};
+        costs.forEach(c => { costByBike[c.bike_id] = (costByBike[c.bike_id] || 0) + Number(c.amount || 0); });
+
+        this.bikes = bikes.map(b => ({
+          id: b.id,
+          model: b.model,
+          buy_price: b.buy_price,
+          status: b.status,
+          dealer: b.dealer,
+          color: b.color,
+          year: b.year,
+          registration_number: b.registration_number || '',
+          total_cost: Number(b.buy_price || 0) + (costByBike[b.id] || 0)
+        }));
+      }catch(e){
+        console.error('Failed to load bikes from Supabase', e);
+        this.error = e.message || 'Failed to load bikes';
+        this.bikes = [];
+      }
     },
     addCost(){ this.form.costs.push({ category:'repair', amount:0, date:new Date().toISOString().slice(0,10), notes:'' }) },
     removeCost(i){ this.form.costs.splice(i,1) },
     async onSubmit(){
       this.error=''; this.success=''; this.loading=true;
       const bike = Object.assign({}, this.form);
+      if (this.editingId) {
+        // update bike
+        const supabase = await getSupabaseClient();
+        if (!supabase) {
+          this.error = 'Supabase client not configured.';
+          this.loading = false;
+          return;
+        }
+        const { data, error } = await supabase.from('bikes').update({
+          model: bike.model,
+          year: bike.year,
+          color: bike.color,
+          buy_price: bike.buy_price,
+          dealer: bike.dealer,
+          status: bike.status,
+          purchase_date: bike.purchase_date,
+          sell_date: bike.sell_date,
+          notes: bike.notes,
+          registration_number: bike.registration_number
+        }).eq('id', this.editingId).select();
+        if (error) {
+          this.error = error.message || 'Failed to update bike';
+          this.loading = false;
+          return;
+        }
+        this.success = 'Bike updated';
+        this.editingId = null;
+        this.resetForm();
+        await this.load();
+        this.loading = false;
+        return;
+      }
+      // add new bike
       const res = await window.handleAddBike({ bike, setError: msg => { this.error=msg }, setSuccess: msg => { this.success=msg; this.load(); this.resetForm() }, setLoading: v => this.loading = v });
       if (res.error) return;
     },
-    resetForm(){ this.form = { model:'', year:new Date().getFullYear(), color:'', buy_price:null, dealer:'', status:'in_stock', purchase_date:new Date().toISOString().slice(0,10), sell_date:'', notes:'', costs:[] } },
+    editBike(bike){
+      this.editingId = bike.id;
+      this.form = {
+        model: bike.model,
+        year: bike.year,
+        color: bike.color,
+        buy_price: bike.buy_price,
+        dealer: bike.dealer,
+        status: bike.status,
+        purchase_date: bike.purchase_date,
+        sell_date: bike.sell_date,
+        notes: bike.notes,
+        costs: [], // not loaded for edit yet
+        registration_number: bike.registration_number
+      };
+    },
+    resetForm(){ this.form = { model:'', year:'', color:'', buy_price:null, dealer:'', status:'in_stock', purchase_date:new Date().toISOString().slice(0,10), sell_date:'', notes:'', costs:[], registration_number:'' } },
+    formatCurrency(v){ if (v === null || v === undefined) return '-'; return '₹' + Number(v).toLocaleString(); },
   };
 };
