@@ -2,7 +2,11 @@
 :root{
   --card-bg: #ffffff;
 }
-body { background-attachment: fixed; }
+body {
+  background: linear-gradient(135deg, #6366f1 0%, #a5b4fc 100%);
+  background-attachment: fixed;
+  min-height: 100vh;
+}
 .shadow-card { box-shadow: 0 8px 26px rgba(2,6,23,0.18); border-radius: 12px; }
 .rounded-lg { border-radius: 12px; }
 .grid { box-sizing: border-box; }
@@ -18,4 +22,56 @@ body { background-attachment: fixed; }
 .sidebar { flex-shrink: 0; }
 .sidebar .shadow-card { box-shadow: none; }
 .sidebar a { color: #0f172a; text-decoration: none; }
+
+.dashboard-card {
+  background: linear-gradient(120deg, #f8fafc 60%, #e0e7ff 100%);
+  box-shadow: 0 8px 32px rgba(99,102,241,0.12);
+  border-radius: 16px;
+  border: 1px solid #e0e7ff;
+  transition: box-shadow 0.2s;
+}
+.dashboard-card:hover {
+  box-shadow: 0 12px 40px rgba(99,102,241,0.18);
+}
+.dashboard-title {
+  color: #6366f1;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+.dashboard-value {
+  color: #0f172a;
+  font-size: 2.2rem;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+}
+.dashboard-meta {
+  color: #a5b4fc;
+  font-size: 1rem;
+  font-weight: 500;
+}
+.dashboard-sidebar {
+  background: linear-gradient(120deg, #6366f1 60%, #a5b4fc 100%);
+  color: #fff;
+  border-radius: 16px;
+  box-shadow: 0 4px 16px rgba(99,102,241,0.08);
+}
+.dashboard-sidebar a {
+  color: #334155;
+  font-weight: 600;
+  background: transparent;
+  padding: 0.5rem 1rem;
+  border-radius: 8px;
+  transition: background 0.2s, color 0.2s;
+}
+.dashboard-sidebar a:hover {
+  background: #e0e7ff;
+  color: #6366f1;
+}
+.dashboard-section {
+  background: #fff;
+  border-radius: 16px;
+  box-shadow: 0 4px 16px rgba(99,102,241,0.08);
+  padding: 2rem;
+  margin-bottom: 2rem;
+}
 
