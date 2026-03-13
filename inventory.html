@@ -21,152 +21,159 @@
     </header>
 
     <main class="max-w-6xl mx-auto p-6" x-data="inventory()" x-init="load()">
-      <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <section class="bg-white p-6 rounded-xl shadow-card">
-          <h2 class="text-xl font-semibold mb-4">Add Bike</h2>
-          <form @submit.prevent="onSubmit()" class="space-y-4">
-            <div>
-              <label class="block text-sm font-medium text-slate-600">Model</label>
-              <input x-model="form.model" type="text" required class="mt-1 input" list="model-history" />
-              <datalist id="model-history">
-                <option x-for="m in modelHistory" :value="m"></option>
-              </datalist>
-            </div>
-            <div>
-              <label class="block text-sm font-medium text-slate-600">Registration Number</label>
-              <input x-model="form.registration_number" type="text" class="mt-1 input" placeholder="e.g. MH12AB1234" />
-            </div>
-
-            <div class="grid grid-cols-2 gap-3">
-              <div>
-                <label class="block text-sm font-medium text-slate-600">Year</label>
-                <input x-model.number="form.year" type="number" min="1900" max="2100" class="mt-1 input" placeholder="Year" />
+      <div class="flex flex-col md:flex-row gap-6 mt-6">
+        <!-- Inventory List LEFT -->
+        <div class="flex-1 order-1 md:order-1">
+          <!-- Inventory List UI -->
+          <section id="inventory-list" class="bg-white p-6 rounded-xl shadow-card">
+            <h3 class="text-lg font-semibold mb-3">Inventory List</h3>
+            <template x-if="true">
+              <div class="mb-3 flex gap-6 items-center justify-between">
+                <div class="flex gap-6 items-center">
+                  <div class="text-sm font-medium text-slate-700">Total bikes: <span x-text="bikes.length"></span></div>
+                  <div class="text-sm font-medium text-green-700">In stock: <span x-text="bikes.filter(b=>b.status==='in_stock').length"></span></div>
+                </div>
+                <div class="text-lg font-semibold text-indigo-700">Total Inventory Value: ₹<span x-text="bikes.filter(b=>b.status==='in_stock').reduce((s,b)=>s+Number(b.total_cost||0),0).toLocaleString()"></span></div>
               </div>
-              <div>
-                <label class="block text-sm font-medium text-slate-600">Color</label>
-                <input x-model="form.color" type="text" class="mt-1 input" list="color-history" />
-                <datalist id="color-history">
-                  <option x-for="c in colorHistory" :value="c"></option>
-                </datalist>
-              </div>
-            </div>
-
-            <div class="grid grid-cols-2 gap-3">
-              <div>
-                <label class="block text-sm font-medium text-slate-600">Buy Price</label>
-                <input x-model.number="form.buy_price" type="number" step="0.01" min="0" class="mt-1 input" />
-              </div>
-              <div>
-                <label class="block text-sm font-medium text-slate-600">Dealer</label>
-                <input x-model="form.dealer" type="text" class="mt-1 input" list="dealer-history" />
-                <datalist id="dealer-history">
-                  <option x-for="d in dealerHistory" :value="d"></option>
-                </datalist>
-              </div>
-            </div>
-
-            <div class="grid grid-cols-2 gap-3">
-              <div>
-                <label class="block text-sm font-medium text-slate-600">Status</label>
-                <select x-model="form.status" class="mt-1 input">
-                  <option value="in_stock">in_stock</option>
-                  <option value="ready">ready</option>
-                  <option value="in_repair">in_repair</option>
-                  <option value="sold">sold</option>
-                  <option value="not_ready">not_ready</option>
-                </select>
-              </div>
-              <div>
-                <label class="block text-sm font-medium text-slate-600">Purchase Date</label>
-                <input x-model="form.purchase_date" type="date" class="mt-1 input" />
-              </div>
-            </div>
-
-            <div>
-              <label class="block text-sm font-medium text-slate-600">Sell Date (optional)</label>
-              <input x-model="form.sell_date" type="date" class="mt-1 input" />
-            </div>
-
-            <div>
-              <label class="block text-sm font-medium text-slate-600">Notes</label>
-              <textarea x-model="form.notes" rows="3" class="mt-1 input"></textarea>
-            </div>
-
-            <div>
-              <h3 class="text-sm font-medium text-slate-700">Bike Costs</h3>
-              <template x-for="(c, i) in form.costs" :key="i">
-                <div class="mt-2 grid grid-cols-12 gap-2 items-center">
-                  <select x-model="c.category" class="col-span-4 input">
-                    <option value="transport">transport</option>
-                    <option value="repair">repair</option>
-                    <option value="parts">parts</option>
-                    <option value="washing">washing</option>
-                    <option value="fuel">fuel</option>
-                    <option value="other">other</option>
-                  </select>
-                  <input x-model.number="c.amount" type="number" step="0.01" min="0" class="col-span-4 input" placeholder="amount" />
-                  <input x-model="c.date" type="date" class="col-span-3 input" />
-                  <button type="button" @click="removeCost(i)" class="col-span-1 text-red-500">✕</button>
+            </template>
+            <div class="space-y-3 max-h-[60vh] overflow-auto">
+              <template x-for="b in bikes" :key="b.id">
+                <div class="p-4 bg-white border border-slate-200 rounded-xl shadow-card flex flex-col gap-2">
+                  <div class="flex justify-between items-center mb-2">
+                    <div class="flex items-center gap-2">
+                      <div class="font-semibold text-lg" x-text="b.model"></div>
+                      <span class="inline-block px-2 py-1 rounded bg-slate-100 text-xs text-slate-600" x-text="b.status"></span>
+                    </div>
+                    <div class="flex items-center gap-3">
+                      <div class="text-sm text-slate-500">Total cost: <span x-text="formatCurrency(b.total_cost)"></span></div>
+                      <button type="button" @click="editBike(b)" title="Edit" class="text-slate-500 hover:text-indigo-600">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536M9 13l6.536-6.536a2 2 0 112.828 2.828L11.828 15.828a2 2 0 01-2.828 0L9 13zm-2 2v3h3" /></svg>
+                      </button>
+                    </div>
+                  </div>
+                  <div class="flex flex-wrap gap-3 text-sm mt-1">
+                    <span class="px-2 py-1 rounded bg-blue-50 text-blue-700">Reg#: <span x-text="b.registration_number||'-'"></span></span>
+                    <span class="px-2 py-1 rounded bg-indigo-50 text-indigo-700">Year: <span x-text="b.year||'-'"></span></span>
+                    <span class="px-2 py-1 rounded bg-pink-50 text-pink-700">Color: <span x-text="b.color||'-'"></span></span>
+                    <span class="px-2 py-1 rounded bg-green-50 text-green-700">Buy price: <span x-text="formatCurrency(b.buy_price)"></span></span>
+                    <span class="px-2 py-1 rounded bg-yellow-50 text-yellow-700">Sum cost: <span x-text="formatCurrency(b.total_cost - b.buy_price)"></span></span>
+                    <span class="px-2 py-1 rounded bg-slate-100 text-slate-700">Dealer: <span x-text="b.dealer||'-'"></span></span>
+                  </div>
+                  <div class="mt-1 text-xs text-slate-500">ID: <span x-text="b.id"></span></div>
                 </div>
               </template>
-              <div class="mt-2">
-                <button type="button" @click="addCost()" class="btn-secondary">Add cost</button>
-              </div>
+              <div x-show="bikes.length===0" class="text-sm text-slate-500">No bikes yet.</div>
+              <template x-if="bikes.length===0 && !error">
+                <div class="text-xs text-slate-400 mt-2">Debug: bikes array = <span x-text="JSON.stringify(bikes)"></span></div>
+              </template>
             </div>
+          </section>
+        </div>
+        <!-- Form RIGHT -->
+        <div class="w-full md:w-96 order-2 md:order-2">
+          <!-- Inventory Form UI -->
+          <section id="inventory-form" class="bg-white p-6 rounded-xl shadow-card">
+            <h2 class="text-xl font-semibold mb-4">Add Bike</h2>
+            <form @submit.prevent="onSubmit()" class="space-y-4">
+              <div>
+                <label class="block text-sm font-medium text-slate-600">Model</label>
+                <input x-model="form.model" type="text" required class="mt-1 input" list="model-history" />
+                <datalist id="model-history">
+                  <option x-for="m in modelHistory" :value="m"></option>
+                </datalist>
+              </div>
+              <div>
+                <label class="block text-sm font-medium text-slate-600">Registration Number</label>
+                <input x-model="form.registration_number" type="text" class="mt-1 input" placeholder="e.g. MH12AB1234" />
+              </div>
 
-            <div class="flex items-center gap-3">
-              <button type="submit" :disabled="loading" class="btn-primary" x-show="!editingId">Add Bike</button>
-              <button type="submit" :disabled="loading" class="btn-primary bg-green-600 hover:bg-green-700" x-show="editingId">Update Bike</button>
-              <button type="button" @click="resetForm(); editingId=null" x-show="editingId" class="btn-secondary">Cancel</button>
-              <div x-show="success" x-text="success" class="text-sm text-green-600"></div>
-              <div x-show="error" x-text="error" class="text-sm text-red-600"></div>
-            </div>
-          </form>
-        </section>
+              <div class="grid grid-cols-2 gap-3">
+                <div>
+                  <label class="block text-sm font-medium text-slate-600">Year</label>
+                  <input x-model.number="form.year" type="number" min="1900" max="2100" class="mt-1 input" placeholder="Year" />
+                </div>
+                <div>
+                  <label class="block text-sm font-medium text-slate-600">Color</label>
+                  <input x-model="form.color" type="text" class="mt-1 input" list="color-history" />
+                  <datalist id="color-history">
+                    <option x-for="c in colorHistory" :value="c"></option>
+                  </datalist>
+                </div>
+              </div>
 
-        <aside class="bg-white p-6 rounded-xl shadow-card">
-          <h3 class="text-lg font-semibold mb-3">Inventory List</h3>
-          <template x-if="true">
-            <div class="mb-3 flex gap-6 items-center justify-between">
-              <div class="flex gap-6 items-center">
-                <div class="text-sm font-medium text-slate-700">Total bikes: <span x-text="bikes.length"></span></div>
-                <div class="text-sm font-medium text-green-700">In stock: <span x-text="bikes.filter(b=>b.status==='in_stock').length"></span></div>
-              </div>
-              <div class="text-lg font-semibold text-indigo-700">Total Inventory Value: ₹<span x-text="bikes.filter(b=>b.status==='in_stock').reduce((s,b)=>s+Number(b.total_cost||0),0).toLocaleString()"></span></div>
-            </div>
-          </template>
-          <div class="space-y-3 max-h-[60vh] overflow-auto">
-            <template x-for="b in bikes" :key="b.id">
-              <div class="p-4 bg-white border border-slate-200 rounded-xl shadow-card flex flex-col gap-2">
-                <div class="flex justify-between items-center mb-2">
-                  <div class="flex items-center gap-2">
-                    <div class="font-semibold text-lg" x-text="b.model"></div>
-                    <span class="inline-block px-2 py-1 rounded bg-slate-100 text-xs text-slate-600" x-text="b.status"></span>
-                  </div>
-                  <div class="flex items-center gap-3">
-                    <div class="text-sm text-slate-500">Total cost: <span x-text="formatCurrency(b.total_cost)"></span></div>
-                    <button type="button" @click="editBike(b)" title="Edit" class="text-slate-500 hover:text-indigo-600">
-                      <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536M9 13l6.536-6.536a2 2 0 112.828 2.828L11.828 15.828a2 2 0 01-2.828 0L9 13zm-2 2v3h3" /></svg>
-                    </button>
-                  </div>
+              <div class="grid grid-cols-2 gap-3">
+                <div>
+                  <label class="block text-sm font-medium text-slate-600">Buy Price</label>
+                  <input x-model.number="form.buy_price" type="number" step="0.01" min="0" class="mt-1 input" />
                 </div>
-                <div class="flex flex-wrap gap-3 text-sm mt-1">
-                  <span class="px-2 py-1 rounded bg-blue-50 text-blue-700">Reg#: <span x-text="b.registration_number||'-'"></span></span>
-                  <span class="px-2 py-1 rounded bg-indigo-50 text-indigo-700">Year: <span x-text="b.year||'-'"></span></span>
-                  <span class="px-2 py-1 rounded bg-pink-50 text-pink-700">Color: <span x-text="b.color||'-'"></span></span>
-                  <span class="px-2 py-1 rounded bg-green-50 text-green-700">Buy price: <span x-text="formatCurrency(b.buy_price)"></span></span>
-                  <span class="px-2 py-1 rounded bg-yellow-50 text-yellow-700">Sum cost: <span x-text="formatCurrency(b.total_cost - b.buy_price)"></span></span>
-                  <span class="px-2 py-1 rounded bg-slate-100 text-slate-700">Dealer: <span x-text="b.dealer||'-'"></span></span>
+                <div>
+                  <label class="block text-sm font-medium text-slate-600">Dealer</label>
+                  <input x-model="form.dealer" type="text" class="mt-1 input" list="dealer-history" />
+                  <datalist id="dealer-history">
+                    <option x-for="d in dealerHistory" :value="d"></option>
+                  </datalist>
                 </div>
-                <div class="mt-1 text-xs text-slate-500">ID: <span x-text="b.id"></span></div>
               </div>
-            </template>
-            <div x-show="bikes.length===0" class="text-sm text-slate-500">No bikes yet.</div>
-            <template x-if="bikes.length===0 && !error">
-              <div class="text-xs text-slate-400 mt-2">Debug: bikes array = <span x-text="JSON.stringify(bikes)"></span></div>
-            </template>
-          </div>
-        </aside>
+
+              <div class="grid grid-cols-2 gap-3">
+                <div>
+                  <label class="block text-sm font-medium text-slate-600">Status</label>
+                  <select x-model="form.status" class="mt-1 input">
+                    <option value="in_stock">in_stock</option>
+                    <option value="ready">ready</option>
+                    <option value="in_repair">in_repair</option>
+                    <option value="sold">sold</option>
+                    <option value="not_ready">not_ready</option>
+                  </select>
+                </div>
+                <div>
+                  <label class="block text-sm font-medium text-slate-600">Purchase Date</label>
+                  <input x-model="form.purchase_date" type="date" class="mt-1 input" />
+                </div>
+              </div>
+
+              <div>
+                <label class="block text-sm font-medium text-slate-600">Sell Date (optional)</label>
+                <input x-model="form.sell_date" type="date" class="mt-1 input" />
+              </div>
+
+              <div>
+                <label class="block text-sm font-medium text-slate-600">Notes</label>
+                <textarea x-model="form.notes" rows="3" class="mt-1 input"></textarea>
+              </div>
+
+              <div>
+                <h3 class="text-sm font-medium text-slate-700">Bike Costs</h3>
+                <template x-for="(c, i) in form.costs" :key="i">
+                  <div class="mt-2 grid grid-cols-12 gap-2 items-center">
+                    <select x-model="c.category" class="col-span-4 input">
+                      <option value="transport">transport</option>
+                      <option value="repair">repair</option>
+                      <option value="parts">parts</option>
+                      <option value="washing">washing</option>
+                      <option value="fuel">fuel</option>
+                      <option value="other">other</option>
+                    </select>
+                    <input x-model.number="c.amount" type="number" step="0.01" min="0" class="col-span-4 input" placeholder="amount" />
+                    <input x-model="c.date" type="date" class="col-span-3 input" />
+                    <button type="button" @click="removeCost(i)" class="col-span-1 text-red-500">✕</button>
+                  </div>
+                </template>
+                <div class="mt-2">
+                  <button type="button" @click="addCost()" class="btn-secondary">Add cost</button>
+                </div>
+              </div>
+
+              <div class="flex items-center gap-3">
+                <button type="submit" :disabled="loading" class="btn-primary" x-show="!editingId">Add Bike</button>
+                <button type="submit" :disabled="loading" class="btn-primary bg-green-600 hover:bg-green-700" x-show="editingId">Update Bike</button>
+                <button type="button" @click="resetForm(); editingId=null" x-show="editingId" class="btn-secondary">Cancel</button>
+                <div x-show="success" x-text="success" class="text-sm text-green-600"></div>
+                <div x-show="error" x-text="error" class="text-sm text-red-600"></div>
+              </div>
+            </form>
+          </section>
+        </div>
       </div>
     </main>
 
