@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Login — AutoDealerDashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
+    <link rel="stylesheet" href="css/login.css" />
+  </head>
+  <body class="bg-gray-50 min-h-screen flex items-center justify-center">
+    <main class="w-full max-w-md p-6">
+      <div class="bg-white rounded-lg shadow-md p-6">
+        <h1 class="text-2xl font-semibold mb-4 text-center">Sign in</h1>
+
+        <form x-data="{ username:'', password:'', loading:false, error:'', success:'', login(){ this.error=''; this.success=''; this.loading=true; window.handleLogin({ username:this.username, password:this.password, setError: msg => { this.error = msg; this.loading=false }, setSuccess: msg => { this.success = msg; this.loading=false }, setLoading: v => this.loading = v }); } }" @submit.prevent="login()" class="space-y-4">
+          <div>
+            <label class="block text-sm font-medium text-gray-700">Username or Email</label>
+            <input x-model="username" type="text" required placeholder="you@example.com" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:ring-indigo-500 focus:border-indigo-500" />
+          </div>
+
+          <div>
+            <label class="block text-sm font-medium text-gray-700">Password</label>
+            <input x-model="password" type="password" required placeholder="••••••••" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:ring-indigo-500 focus:border-indigo-500" />
+          </div>
+
+          <div class="flex items-center justify-between">
+            <div class="text-sm">
+              <a href="#" class="text-indigo-600 hover:text-indigo-500">Forgot password?</a>
+            </div>
+          </div>
+
+          <div>
+            <button type="submit" :disabled="loading" class="w-full inline-flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 disabled:opacity-60">
+              <template x-if="!loading">Sign in</template>
+              <template x-if="loading">Signing in...</template>
+            </button>
+          </div>
+
+          <div x-show="error" x-text="error" class="text-sm text-red-600"></div>
+          <div x-show="success" x-text="success" class="text-sm text-green-600"></div>
+        </form>
+      </div>
+      <p class="mt-4 text-center text-sm text-gray-500">Tip: use <strong>admin</strong>/<strong>password</strong> for local mock login.</p>
+    </main>
+
+    <script type="module" src="js/notifications.js"></script>
+    <link rel="stylesheet" href="css/notifications.css" />
+    <script type="module" src="js/login.js"></script>
+  </body>
+</html>

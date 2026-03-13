@@ -1,0 +1,21 @@
+/* Dashboard specific styles */
+:root{
+  --card-bg: #ffffff;
+}
+body { background-attachment: fixed; }
+.shadow-card { box-shadow: 0 8px 26px rgba(2,6,23,0.18); border-radius: 12px; }
+.rounded-lg { border-radius: 12px; }
+.grid { box-sizing: border-box; }
+
+/* Utility to make placeholder charts look nicer */
+.chart-placeholder { background: linear-gradient(90deg,#eef2ff,#f1f5f9); border-radius: 8px; }
+
+@media (max-width: 640px){
+  .shadow-card { padding: 12px; }
+}
+
+/* Sidebar */
+.sidebar { flex-shrink: 0; }
+.sidebar .shadow-card { box-shadow: none; }
+.sidebar a { color: #0f172a; text-decoration: none; }
+

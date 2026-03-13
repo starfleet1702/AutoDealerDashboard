@@ -1,0 +1,138 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Inventory — AutoDealerDashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="css/inventory.css" />
+  </head>
+  <body class="bg-slate-50 min-h-screen">
+    <header class="bg-white shadow-sm">
+      <nav class="max-w-6xl mx-auto p-4 flex items-center justify-between">
+        <a class="flex items-center gap-3 text-slate-800" href="dashboard.html">
+          <div class="w-10 h-10 rounded-md bg-indigo-500 flex items-center justify-center text-white font-bold">AD</div>
+          <span class="font-semibold text-lg">Inventory</span>
+        </a>
+        <div>
+          <a href="dashboard.html" class="text-sm text-slate-600 hover:text-slate-800">Back to Dashboard</a>
+        </div>
+      </nav>
+    </header>
+
+    <main class="max-w-6xl mx-auto p-6" x-data="inventory()" x-init="load()">
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <section class="bg-white p-6 rounded-xl shadow-card">
+          <h2 class="text-xl font-semibold mb-4">Add Bike</h2>
+          <form @submit.prevent="onSubmit()" class="space-y-4">
+            <div>
+              <label class="block text-sm font-medium text-slate-600">Model</label>
+              <input x-model="form.model" type="text" required class="mt-1 input" />
+            </div>
+
+            <div class="grid grid-cols-2 gap-3">
+              <div>
+                <label class="block text-sm font-medium text-slate-600">Year</label>
+                <input x-model.number="form.year" type="number" min="1900" max="2100" class="mt-1 input" />
+              </div>
+              <div>
+                <label class="block text-sm font-medium text-slate-600">Color</label>
+                <input x-model="form.color" type="text" class="mt-1 input" />
+              </div>
+            </div>
+
+            <div class="grid grid-cols-2 gap-3">
+              <div>
+                <label class="block text-sm font-medium text-slate-600">Buy Price</label>
+                <input x-model.number="form.buy_price" type="number" step="0.01" min="0" class="mt-1 input" />
+              </div>
+              <div>
+                <label class="block text-sm font-medium text-slate-600">Dealer</label>
+                <input x-model="form.dealer" type="text" class="mt-1 input" />
+              </div>
+            </div>
+
+            <div class="grid grid-cols-2 gap-3">
+              <div>
+                <label class="block text-sm font-medium text-slate-600">Status</label>
+                <select x-model="form.status" class="mt-1 input">
+                  <option value="in_stock">in_stock</option>
+                  <option value="ready">ready</option>
+                  <option value="in_repair">in_repair</option>
+                  <option value="sold">sold</option>
+                  <option value="not_ready">not_ready</option>
+                </select>
+              </div>
+              <div>
+                <label class="block text-sm font-medium text-slate-600">Purchase Date</label>
+                <input x-model="form.purchase_date" type="date" class="mt-1 input" />
+              </div>
+            </div>
+
+            <div>
+              <label class="block text-sm font-medium text-slate-600">Sell Date (optional)</label>
+              <input x-model="form.sell_date" type="date" class="mt-1 input" />
+            </div>
+
+            <div>
+              <label class="block text-sm font-medium text-slate-600">Notes</label>
+              <textarea x-model="form.notes" rows="3" class="mt-1 input"></textarea>
+            </div>
+
+            <div>
+              <h3 class="text-sm font-medium text-slate-700">Bike Costs</h3>
+              <template x-for="(c, i) in form.costs" :key="i">
+                <div class="mt-2 grid grid-cols-12 gap-2 items-center">
+                  <select x-model="c.category" class="col-span-4 input">
+                    <option value="transport">transport</option>
+                    <option value="repair">repair</option>
+                    <option value="parts">parts</option>
+                    <option value="washing">washing</option>
+                    <option value="fuel">fuel</option>
+                    <option value="other">other</option>
+                  </select>
+                  <input x-model.number="c.amount" type="number" step="0.01" min="0" class="col-span-4 input" placeholder="amount" />
+                  <input x-model="c.date" type="date" class="col-span-3 input" />
+                  <button type="button" @click="removeCost(i)" class="col-span-1 text-red-500">✕</button>
+                </div>
+              </template>
+              <div class="mt-2">
+                <button type="button" @click="addCost()" class="btn-secondary">Add cost</button>
+              </div>
+            </div>
+
+            <div class="flex items-center gap-3">
+              <button type="submit" :disabled="loading" class="btn-primary">Add Bike</button>
+              <div x-show="success" x-text="success" class="text-sm text-green-600"></div>
+              <div x-show="error" x-text="error" class="text-sm text-red-600"></div>
+            </div>
+          </form>
+        </section>
+
+        <aside class="bg-white p-6 rounded-xl shadow-card">
+          <h3 class="text-lg font-semibold mb-3">Inventory List</h3>
+          <div class="space-y-3 max-h-[60vh] overflow-auto">
+            <template x-for="b in bikes" :key="b.id">
+              <div class="p-3 border rounded-md">
+                <div class="flex justify-between items-center">
+                  <div>
+                    <div class="font-medium" x-text="b.model"></div>
+                    <div class="text-sm text-slate-500">ID: <span x-text="b.id"></span> — <span x-text="b.status"></span></div>
+                  </div>
+                  <div class="text-sm font-semibold">₹<span x-text="Number(b.buy_price).toLocaleString()"></span></div>
+                </div>
+                <div class="mt-2 text-sm text-slate-600">Dealer: <span x-text="b.dealer||'-'"></span></div>
+              </div>
+            </template>
+            <div x-show="bikes.length===0" class="text-sm text-slate-500">No bikes yet.</div>
+          </div>
+        </aside>
+      </div>
+    </main>
+
+    <script type="module" src="js/notifications.js"></script>
+    <link rel="stylesheet" href="css/notifications.css" />
+    <script type="module" src="js/inventory.js"></script>
+    <script src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
+  </body>
+</html>
