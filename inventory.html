@@ -28,10 +28,19 @@
           <section id="inventory-list" class="bg-white p-6 rounded-xl shadow-card">
             <div class="flex items-center justify-between mb-3">
               <h3 class="text-lg font-semibold">Inventory List</h3>
-              <div class="relative">
-                <input x-model="searchQuery" @input="filterBikes()" type="text" placeholder="Search bikes..." class="input pl-10 w-48 text-sm" />
-                <button type="button" @click="toggleSearch()" class="absolute left-2 top-1.5 text-slate-400 hover:text-indigo-600">
-                  <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-4.35-4.35M11 19a8 8 0 100-16 8 8 0 000 16z" /></svg>
+              <div class="flex items-center gap-3">
+                <div class="relative">
+                  <input x-model="searchQuery" @input="filterBikes()" type="text" placeholder="Search bikes..." class="input pl-10 pr-10 w-48 text-sm" />
+                  <button type="button" @click="toggleSearch()" class="absolute left-2 top-1.5 text-slate-400 hover:text-indigo-600">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-4.35-4.35M11 19a8 8 0 100-16 8 8 0 000 16z" /></svg>
+                  </button>
+                  <button type="button" @click="searchQuery = ''; filterBikes()" x-show="searchQuery.length > 0" class="absolute right-2 top-1.5 text-slate-400 hover:text-red-600">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
+                  </button>
+                </div>
+                <button type="button" @click="showForm = !showForm; if(showForm) editingId = null" class="btn-primary text-sm py-2 px-4 flex items-center gap-1">
+                  <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" /></svg>
+                  Add Bike
                 </button>
               </div>
             </div>
@@ -44,45 +53,66 @@
                 <div class="text-lg font-semibold text-indigo-700">Total Inventory Value: ₹<span x-text="filteredBikes.filter(b=>b.status==='in_stock').reduce((s,b)=>s+Number(b.total_cost||0),0).toLocaleString()"></span></div>
               </div>
             </template>
-            <div class="space-y-3 max-h-[60vh] overflow-auto">
+            <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 max-h-[60vh] overflow-auto">
               <template x-for="b in filteredBikes" :key="b.id">
-                <div class="p-4 bg-white border border-slate-200 rounded-xl shadow-card flex flex-col gap-2">
-                  <div class="flex justify-between items-center mb-2">
-                    <div class="flex items-center gap-2">
-                      <div class="font-semibold text-lg" x-text="b.model"></div>
-                      <span class="inline-block px-2 py-1 rounded bg-slate-100 text-xs text-slate-600" x-text="b.status"></span>
+                <div class="p-3 bg-white border border-slate-200 rounded-lg shadow-card flex flex-col gap-2">
+                  <div class="flex justify-between items-start mb-2">
+                    <div class="flex flex-col gap-1 flex-1 min-w-0">
+                      <div class="font-semibold text-base truncate" x-text="b.model"></div>
+                      <div class="flex items-center gap-2">
+                        <span class="inline-block px-2 py-0.5 rounded bg-slate-100 text-xs text-slate-600" x-text="b.status"></span>
+                        <span class="text-xs text-slate-500 truncate" x-text="'ID: ' + b.id"></span>
+                      </div>
                     </div>
-                    <div class="flex items-center gap-3">
-                      <div class="text-sm text-slate-500">Total cost: <span x-text="formatCurrency(b.total_cost)"></span></div>
-                      <button type="button" @click="editBike(b)" title="Edit" class="text-slate-500 hover:text-indigo-600">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536M9 13l6.536-6.536a2 2 0 112.828 2.828L11.828 15.828a2 2 0 01-2.828 0L9 13zm-2 2v3h3" /></svg>
-                      </button>
+                    <button type="button" @click="editBike(b)" title="Edit" class="text-slate-400 hover:text-indigo-600 flex-shrink-0 ml-2">
+                      <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536M9 13l6.536-6.536a2 2 0 112.828 2.828L11.828 15.828a2 2 0 01-2.828 0L9 13zm-2 2v3h3" /></svg>
+                    </button>
+                  </div>
+                  <div class="grid grid-cols-2 gap-2 text-xs">
+                    <div class="px-2 py-1 rounded bg-blue-50 text-blue-700 truncate">
+                      <span class="font-medium">Reg#:</span> <span x-text="b.registration_number||'-'"></span>
+                    </div>
+                    <div class="px-2 py-1 rounded bg-indigo-50 text-indigo-700">
+                      <span class="font-medium">Year:</span> <span x-text="b.year||'-'"></span>
+                    </div>
+                    <div class="px-2 py-1 rounded bg-pink-50 text-pink-700 truncate">
+                      <span class="font-medium">Color:</span> <span x-text="b.color||'-'"></span>
+                    </div>
+                    <div class="px-2 py-1 rounded bg-slate-100 text-slate-700 truncate">
+                      <span class="font-medium">Dealer:</span> <span x-text="b.dealer||'-'"></span>
                     </div>
                   </div>
-                  <div class="flex flex-wrap gap-3 text-sm mt-1">
-                    <span class="px-2 py-1 rounded bg-blue-50 text-blue-700">Reg#: <span x-text="b.registration_number||'-'"></span></span>
-                    <span class="px-2 py-1 rounded bg-indigo-50 text-indigo-700">Year: <span x-text="b.year||'-'"></span></span>
-                    <span class="px-2 py-1 rounded bg-pink-50 text-pink-700">Color: <span x-text="b.color||'-'"></span></span>
-                    <span class="px-2 py-1 rounded bg-green-50 text-green-700">Buy price: <span x-text="formatCurrency(b.buy_price)"></span></span>
-                    <span class="px-2 py-1 rounded bg-yellow-50 text-yellow-700">Sum cost: <span x-text="formatCurrency(b.total_cost - b.buy_price)"></span></span>
-                    <span class="px-2 py-1 rounded bg-slate-100 text-slate-700">Dealer: <span x-text="b.dealer||'-'"></span></span>
+                  <div class="flex justify-between items-center pt-1 border-t border-slate-100">
+                    <div class="text-xs">
+                      <div class="text-green-700"><span class="font-medium">Buy:</span> <span x-text="formatCurrency(b.buy_price)"></span></div>
+                    </div>
+                    <div class="text-xs">
+                      <div class="text-yellow-700"><span class="font-medium">Costs:</span> <span x-text="formatCurrency(b.total_cost - b.buy_price)"></span></div>
+                    </div>
+                    <div class="text-xs">
+                      <div class="text-slate-700 font-semibold"><span class="font-medium">Total:</span> <span x-text="formatCurrency(b.total_cost)"></span></div>
+                    </div>
                   </div>
-                  <div class="mt-1 text-xs text-slate-500">ID: <span x-text="b.id"></span></div>
                 </div>
               </template>
-              <div x-show="bikes.length===0" class="text-sm text-slate-500">No bikes yet.</div>
-              <div x-show="filteredBikes.length===0" class="text-sm text-slate-500">No bikes found.</div>
-              <template x-if="filteredBikes.length===0 && !error">
-                <div class="text-xs text-slate-400 mt-2">Debug: filteredBikes array = <span x-text="JSON.stringify(filteredBikes)"></span></div>
-              </template>
             </div>
+            <div x-show="bikes.length===0" class="text-sm text-slate-500 mt-4 text-center">No bikes yet.</div>
+            <div x-show="bikes.length>0 && filteredBikes.length===0" class="text-sm text-slate-500 mt-4 text-center">No bikes found.</div>
+            <template x-if="filteredBikes.length===0 && !error">
+              <div class="text-xs text-slate-400 mt-2 text-center">Debug: filteredBikes array = <span x-text="JSON.stringify(filteredBikes)"></span></div>
+            </template>
           </section>
         </div>
         <!-- Form RIGHT -->
-        <div class="w-full md:w-96 order-2 md:order-2">
+        <div class="w-full md:w-96 order-2 md:order-2" x-show="showForm" x-transition>
           <!-- Inventory Form UI -->
           <section id="inventory-form" class="bg-white p-6 rounded-xl shadow-card">
-            <h2 class="text-xl font-semibold mb-4">Add Bike</h2>
+            <div class="flex items-center justify-between mb-4">
+              <h2 class="text-xl font-semibold" x-text="editingId ? 'Edit Bike' : 'Add Bike'"></h2>
+              <button type="button" @click="showForm = false; editingId = null; resetForm()" title="Close" class="text-slate-400 hover:text-slate-600">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
+              </button>
+            </div>
             <form @submit.prevent="onSubmit()" class="space-y-4">
               <div>
                 <label class="block text-sm font-medium text-slate-600">Model</label>
@@ -182,7 +212,7 @@
               <div class="flex items-center gap-3">
                 <button type="submit" :disabled="loading" class="btn-primary" x-show="!editingId">Add Bike</button>
                 <button type="submit" :disabled="loading" class="btn-primary bg-green-600 hover:bg-green-700" x-show="editingId">Update Bike</button>
-                <button type="button" @click="resetForm(); editingId=null" x-show="editingId" class="btn-secondary">Cancel</button>
+                <button type="button" @click="resetForm(); editingId=null; showForm=false" x-show="editingId" class="btn-secondary">Cancel</button>
                 <div x-show="success" x-text="success" class="text-sm text-green-600"></div>
                 <div x-show="error" x-text="error" class="text-sm text-red-600"></div>
               </div>

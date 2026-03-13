@@ -76,6 +76,7 @@ window.inventory = function(){
     bikes: [],
     filteredBikes: [],
     searchQuery: '',
+    showForm: false,
     loading: false,
     error: '',
     success: '',
@@ -186,17 +187,19 @@ window.inventory = function(){
         }
         this.success = 'Bike updated';
         this.editingId = null;
+        this.showForm = false;
         this.resetForm();
         await this.load();
         this.loading = false;
         return;
       }
       // add new bike
-      const res = await window.handleAddBike({ bike, setError: msg => { this.error=msg }, setSuccess: msg => { this.success=msg; this.load(); this.resetForm() }, setLoading: v => this.loading = v });
+      const res = await window.handleAddBike({ bike, setError: msg => { this.error=msg }, setSuccess: msg => { this.success=msg; this.showForm=false; this.load(); this.resetForm() }, setLoading: v => this.loading = v });
       if (res.error) return;
     },
     editBike(bike){
       this.editingId = bike.id;
+      this.showForm = true;
       this.form = {
         model: bike.model,
         year: bike.year,
