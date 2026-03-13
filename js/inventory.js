@@ -74,6 +74,8 @@ window.handleAddBike = async ({ bike, setError, setSuccess, setLoading }) => {
 window.inventory = function(){
   return {
     bikes: [],
+    filteredBikes: [],
+    searchQuery: '',
     loading: false,
     error: '',
     success: '',
@@ -129,11 +131,28 @@ window.inventory = function(){
           registration_number: b.registration_number || '',
           total_cost: Number(b.buy_price || 0) + (costByBike[b.id] || 0)
         }));
+        this.filterBikes();
       }catch(e){
         console.error('Failed to load bikes from Supabase', e);
         this.error = e.message || 'Failed to load bikes';
         this.bikes = [];
+        this.filteredBikes = [];
       }
+    },
+    filterBikes(){
+      const q = (this.searchQuery || '').trim().toLowerCase();
+      this.filteredBikes = this.bikes.filter(b => {
+        if (!q) return b.status === 'in_stock';
+        return (
+          (b.model && b.model.toLowerCase().includes(q)) ||
+          (b.registration_number && b.registration_number.toLowerCase().includes(q)) ||
+          (b.status && b.status.toLowerCase().includes(q))
+        );
+      });
+    },
+    toggleSearch(){
+      this.searchQuery = '';
+      this.filterBikes();
     },
     addCost(){ this.form.costs.push({ category:'repair', amount:0, date:new Date().toISOString().slice(0,10), notes:'' }) },
     removeCost(i){ this.form.costs.splice(i,1) },

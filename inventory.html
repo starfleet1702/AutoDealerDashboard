@@ -26,18 +26,26 @@
         <div class="flex-1 order-1 md:order-1">
           <!-- Inventory List UI -->
           <section id="inventory-list" class="bg-white p-6 rounded-xl shadow-card">
-            <h3 class="text-lg font-semibold mb-3">Inventory List</h3>
+            <div class="flex items-center justify-between mb-3">
+              <h3 class="text-lg font-semibold">Inventory List</h3>
+              <div class="relative">
+                <input x-model="searchQuery" @input="filterBikes()" type="text" placeholder="Search bikes..." class="input pl-10 w-48 text-sm" />
+                <button type="button" @click="toggleSearch()" class="absolute left-2 top-1.5 text-slate-400 hover:text-indigo-600">
+                  <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-4.35-4.35M11 19a8 8 0 100-16 8 8 0 000 16z" /></svg>
+                </button>
+              </div>
+            </div>
             <template x-if="true">
               <div class="mb-3 flex gap-6 items-center justify-between">
                 <div class="flex gap-6 items-center">
-                  <div class="text-sm font-medium text-slate-700">Total bikes: <span x-text="bikes.length"></span></div>
-                  <div class="text-sm font-medium text-green-700">In stock: <span x-text="bikes.filter(b=>b.status==='in_stock').length"></span></div>
+                  <div class="text-sm font-medium text-slate-700">Total bikes: <span x-text="filteredBikes.length"></span></div>
+                  <div class="text-sm font-medium text-green-700">In stock: <span x-text="filteredBikes.filter(b=>b.status==='in_stock').length"></span></div>
                 </div>
-                <div class="text-lg font-semibold text-indigo-700">Total Inventory Value: ₹<span x-text="bikes.filter(b=>b.status==='in_stock').reduce((s,b)=>s+Number(b.total_cost||0),0).toLocaleString()"></span></div>
+                <div class="text-lg font-semibold text-indigo-700">Total Inventory Value: ₹<span x-text="filteredBikes.filter(b=>b.status==='in_stock').reduce((s,b)=>s+Number(b.total_cost||0),0).toLocaleString()"></span></div>
               </div>
             </template>
             <div class="space-y-3 max-h-[60vh] overflow-auto">
-              <template x-for="b in bikes" :key="b.id">
+              <template x-for="b in filteredBikes" :key="b.id">
                 <div class="p-4 bg-white border border-slate-200 rounded-xl shadow-card flex flex-col gap-2">
                   <div class="flex justify-between items-center mb-2">
                     <div class="flex items-center gap-2">
@@ -63,8 +71,9 @@
                 </div>
               </template>
               <div x-show="bikes.length===0" class="text-sm text-slate-500">No bikes yet.</div>
-              <template x-if="bikes.length===0 && !error">
-                <div class="text-xs text-slate-400 mt-2">Debug: bikes array = <span x-text="JSON.stringify(bikes)"></span></div>
+              <div x-show="filteredBikes.length===0" class="text-sm text-slate-500">No bikes found.</div>
+              <template x-if="filteredBikes.length===0 && !error">
+                <div class="text-xs text-slate-400 mt-2">Debug: filteredBikes array = <span x-text="JSON.stringify(filteredBikes)"></span></div>
               </template>
             </div>
           </section>
@@ -79,7 +88,9 @@
                 <label class="block text-sm font-medium text-slate-600">Model</label>
                 <input x-model="form.model" type="text" required class="mt-1 input" list="model-history" />
                 <datalist id="model-history">
-                  <option x-for="m in modelHistory" :value="m"></option>
+                  <template x-for="m in modelHistory" :key="m">
+                    <option :value="m">{{m}}</option>
+                  </template>
                 </datalist>
               </div>
               <div>
@@ -96,7 +107,9 @@
                   <label class="block text-sm font-medium text-slate-600">Color</label>
                   <input x-model="form.color" type="text" class="mt-1 input" list="color-history" />
                   <datalist id="color-history">
-                    <option x-for="c in colorHistory" :value="c"></option>
+                    <template x-for="c in colorHistory" :key="c">
+                      <option :value="c">{{c}}</option>
+                    </template>
                   </datalist>
                 </div>
               </div>
@@ -110,7 +123,9 @@
                   <label class="block text-sm font-medium text-slate-600">Dealer</label>
                   <input x-model="form.dealer" type="text" class="mt-1 input" list="dealer-history" />
                   <datalist id="dealer-history">
-                    <option x-for="d in dealerHistory" :value="d"></option>
+                    <template x-for="d in dealerHistory" :key="d">
+                      <option :value="d">{{d}}</option>
+                    </template>
                   </datalist>
                 </div>
               </div>
