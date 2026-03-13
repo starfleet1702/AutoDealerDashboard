@@ -27,9 +27,14 @@
       }
       .dashboard-value {
         color: #0f172a;
-        font-size: 2.2rem;
+        font-size: 1.5rem;
         font-weight: 700;
         letter-spacing: 0.01em;
+      }
+      @media (min-width: 640px) {
+        .dashboard-value {
+          font-size: 2.2rem;
+        }
       }
       .dashboard-meta {
         color: #a5b4fc;
@@ -58,52 +63,92 @@
         background: #fff;
         border-radius: 16px;
         box-shadow: 0 4px 16px rgba(99,102,241,0.08);
-        padding: 2rem;
-        margin-bottom: 2rem;
+        padding: 1rem;
+        margin-bottom: 1rem;
+      }
+      @media (min-width: 768px) {
+        .dashboard-section {
+          padding: 2rem;
+          margin-bottom: 2rem;
+        }
+      }
+      .mobile-menu-overlay {
+        display: none;
+      }
+      .mobile-menu-overlay.active {
+        display: block;
+        position: fixed;
+        inset: 0;
+        background: rgba(0,0,0,0.5);
+        z-index: 40;
+      }
+      .mobile-sidebar {
+        transform: translateX(-100%);
+        transition: transform 0.3s ease-in-out;
+      }
+      .mobile-sidebar.active {
+        transform: translateX(0);
+      }
+      @media (min-width: 768px) {
+        .mobile-sidebar {
+          transform: translateX(0) !important;
+        }
       }
     </style>
   </head>
   <body class="antialiased bg-gradient-to-b from-slate-900 to-slate-800 text-slate-800">
     <header class="bg-transparent">
-      <nav class="max-w-6xl mx-auto p-4 flex items-center justify-between">
-        <a class="flex items-center gap-3 text-white" href="/">
-          <div class="w-10 h-10 rounded-md bg-indigo-500 flex items-center justify-center text-white font-bold">AD</div>
-          <span class="font-semibold text-lg">Momai Auto</span>
-        </a>
+      <nav class="max-w-6xl mx-auto p-3 md:p-4 flex items-center justify-between">
+        <div class="flex items-center gap-3">
+          <button id="mobile-menu-btn" class="md:hidden text-white p-2" onclick="toggleMobileMenu()">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
+            </svg>
+          </button>
+          <a class="flex items-center gap-2 md:gap-3 text-white" href="/">
+            <div class="w-8 h-8 md:w-10 md:h-10 rounded-md bg-indigo-500 flex items-center justify-center text-white font-bold text-sm md:text-base">AD</div>
+            <span class="font-semibold text-base md:text-lg">Momai Auto</span>
+          </a>
+        </div>
         <div class="flex items-center gap-4">
-          <a href="login.html" class="text-sm text-indigo-200 hover:text-white">Logout</a>
+          <a href="login.html" class="text-xs md:text-sm text-indigo-200 hover:text-white">Logout</a>
         </div>
       </nav>
     </header>
 
-    <div class="max-w-7xl mx-auto p-6">
-      <div class="flex gap-6">
+    <!-- Mobile Menu Overlay -->
+    <div id="mobile-menu-overlay" class="mobile-menu-overlay" onclick="toggleMobileMenu()"></div>
+    
+    <div class="max-w-7xl mx-auto p-3 md:p-6">
+      <div class="flex gap-4 md:gap-6">
         <!-- Sidebar -->
-        <aside class="w-64 dashboard-sidebar md:block">
-          <div class="p-4 bg-white rounded-lg shadow-card">
-            <div class="flex items-center gap-3 mb-4">
-              <div class="w-9 h-9 rounded bg-indigo-500 text-white flex items-center justify-center font-bold">AD</div>
-              <div>
-                <div class="font-semibold text-slate-800">Auto Dealer Dashboard</div>
-                <div class="text-sm text-slate-500">Dealer Finance</div>
+        <aside id="mobile-sidebar" class="fixed md:relative inset-y-0 left-0 w-64 dashboard-sidebar mobile-sidebar z-50 md:z-auto">
+          <div class="h-screen md:h-auto overflow-y-auto">
+            <div class="p-4 bg-white rounded-lg shadow-card">
+              <div class="flex items-center gap-3 mb-4">
+                <div class="w-9 h-9 rounded bg-indigo-500 text-white flex items-center justify-center font-bold">AD</div>
+                <div>
+                  <div class="font-semibold text-slate-800">Auto Dealer Dashboard</div>
+                  <div class="text-sm text-slate-500">Dealer Finance</div>
+                </div>
               </div>
+              <nav class="space-y-2 text-sm">
+                <a href="dashboard.html" class="block px-3 py-2 rounded hover:bg-slate-50 font-medium text-slate-800">Dashboard</a>
+                <a href="inventory.html" class="block px-3 py-2 rounded hover:bg-slate-50 text-slate-700">Inventory</a>
+                <a href="#" class="block px-3 py-2 rounded hover:bg-slate-50 text-slate-700">Sales</a>
+                <a href="expenses.html" class="block px-3 py-2 rounded hover:bg-slate-50 text-slate-700">Expenses</a>
+                <a href="#" class="block px-3 py-2 rounded hover:bg-slate-50 text-slate-700">Receivables</a>
+                <a href="payables.html" class="block px-3 py-2 rounded hover:bg-slate-50 text-slate-700">Payables</a>
+              </nav>
             </div>
-            <nav class="space-y-2 text-sm">
-              <a href="dashboard.html" class="block px-3 py-2 rounded hover:bg-slate-50 font-medium text-slate-800">Dashboard</a>
-              <a href="inventory.html" class="block px-3 py-2 rounded hover:bg-slate-50 text-slate-700">Inventory</a>
-              <a href="#" class="block px-3 py-2 rounded hover:bg-slate-50 text-slate-700">Sales</a>
-              <a href="expenses.html" class="block px-3 py-2 rounded hover:bg-slate-50 text-slate-700">Expenses</a>
-              <a href="#" class="block px-3 py-2 rounded hover:bg-slate-50 text-slate-700">Receivables</a>
-              <a href="#" class="block px-3 py-2 rounded hover:bg-slate-50 text-slate-700">Payables</a>
-            </nav>
           </div>
         </aside>
 
         <!-- Main content -->
-        <main class="flex-1" x-data="dashboard()" x-init="load()">
-          <section class="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div class="col-span-2">
-          <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <main class="flex-1 min-w-0" x-data="dashboard()" x-init="load()">
+          <section class="grid grid-cols-1 lg:grid-cols-3 gap-4 md:gap-6">
+            <div class="lg:col-span-2">
+          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-4">
             <template x-for="card in cards" :key="card.key">
               <a :href="card.key==='inventory' ? 'inventory.html' : '#'" style="text-decoration:none" :class="'block p-4 rounded-lg shadow-card bg-white dashboard-card ' + (card.key==='inventory' ? 'cursor-pointer hover:ring-2 hover:ring-indigo-400' : '')">
                 <div class="flex items-center justify-between">
@@ -113,8 +158,11 @@
                       <template x-if="cardsLoading">
                         <svg class="animate-spin h-6 w-6 text-indigo-500 mx-auto" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"></path></svg>
                       </template>
-                      <template x-if="!cardsLoading">
+                      <template x-if="!cardsLoading && card.key !== 'payables'">
                         <span x-text="formatCurrency(card.value)"></span>
+                      </template>
+                      <template x-if="!cardsLoading && card.key === 'payables'">
+                        <span class="text-red-600" x-text="'-' + formatCurrency(card.value)"></span>
                       </template>
                     </div>
                   </div>
@@ -124,20 +172,20 @@
             </template>
           </div>
 
-          <div class="mt-6 grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <div class="p-4 rounded-lg bg-white shadow-card">
-              <h3 class="font-medium text-slate-700">Monthly Profit</h3>
-              <div class="mt-4 h-40 flex items-center justify-center text-slate-400">[Chart placeholder]</div>
+          <div class="mt-4 md:mt-6 grid grid-cols-1 lg:grid-cols-2 gap-3 md:gap-6">
+            <div class="p-3 md:p-4 rounded-lg bg-white shadow-card">
+              <h3 class="font-medium text-sm md:text-base text-slate-700">Monthly Profit</h3>
+              <div class="mt-3 md:mt-4 h-32 md:h-40 flex items-center justify-center text-xs md:text-sm text-slate-400">[Chart placeholder]</div>
             </div>
 
-            <div class="p-4 rounded-lg bg-white shadow-card">
-              <h3 class="font-medium text-slate-700">Inventory Value Trend</h3>
-              <div class="mt-4 h-40 flex items-center justify-center text-slate-400">[Chart placeholder]</div>
+            <div class="p-3 md:p-4 rounded-lg bg-white shadow-card">
+              <h3 class="font-medium text-sm md:text-base text-slate-700">Inventory Value Trend</h3>
+              <div class="mt-3 md:mt-4 h-32 md:h-40 flex items-center justify-center text-xs md:text-sm text-slate-400">[Chart placeholder]</div>
             </div>
           </div>
         </div>
 
-        <aside>
+        <aside class="lg:col-span-1">
           <div class="p-4 rounded-lg bg-white shadow-card">
             <h4 class="font-medium text-slate-700">Quick Stats</h4>
             <ul class="mt-3 space-y-3 text-slate-600">
@@ -148,9 +196,9 @@
             </ul>
           </div>
 
-          <div class="mt-4 p-4 rounded-lg bg-white shadow-card">
-            <h4 class="font-medium text-slate-700">Recent Sales</h4>
-            <ul class="mt-3 divide-y divide-slate-100">
+          <div class="mt-3 md:mt-4 p-3 md:p-4 rounded-lg bg-white shadow-card">
+            <h4 class="font-medium text-sm md:text-base text-slate-700">Recent Sales</h4>
+            <ul class="mt-3 divide-y divide-slate-100 text-sm md:text-base">
               <template x-for="sale in recentSales" :key="sale.id">
                 <li class="py-3 flex justify-between items-center">
                   <div>
@@ -166,10 +214,10 @@
         </aside>
       </section>
 
-      <section class="mt-6">
-          <div class="p-4 rounded-lg bg-white shadow-card dashboard-section">
-            <h4 class="font-medium text-slate-700">Cash/Bank Adjustment</h4>
-            <form @submit.prevent="onCashBankAdjust()" class="grid grid-cols-1 md:grid-cols-5 gap-3 items-end">
+      <section class="mt-4 md:mt-6">
+          <div class="p-3 md:p-4 rounded-lg bg-white shadow-card dashboard-section">
+            <h4 class="font-medium text-sm md:text-base text-slate-700 mb-3">Cash/Bank Adjustment</h4>
+            <form @submit.prevent="onCashBankAdjust()" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 items-end">
               <div>
                 <label class="block text-xs text-slate-600">Account</label>
                 <select x-model="cashBankForm.account" class="input">
@@ -196,15 +244,15 @@
                 <label class="block text-xs text-slate-600">Notes</label>
                 <input x-model="cashBankForm.notes" type="text" class="input" />
               </div>
-              <div>
-                <button type="submit" class="btn-primary bg-indigo-600 hover:bg-indigo-700 text-white font-semibold px-4 py-2 rounded shadow">Add Entry</button>
+              <div class="sm:col-span-2 lg:col-span-1">
+                <button type="submit" class="w-full btn-primary bg-indigo-600 hover:bg-indigo-700 text-white font-semibold px-4 py-2 rounded shadow text-sm md:text-base">Add Entry</button>
               </div>
-              <div x-show="cashBankForm.status" x-text="cashBankForm.status" class="col-span-5 text-sm mt-2" :class="{'text-green-600': cashBankForm.status==='Entry added', 'text-red-600': cashBankForm.status.startsWith('Error')}" ></div>
+              <div x-show="cashBankForm.status" x-text="cashBankForm.status" class="col-span-1 sm:col-span-2 lg:col-span-5 text-xs md:text-sm mt-2" :class="{'text-green-600': cashBankForm.status==='Entry added', 'text-red-600': cashBankForm.status.startsWith('Error')}" ></div>
             </form>
           </div>
-        <div class="p-4 rounded-lg bg-white shadow-card">
-          <h4 class="font-medium text-slate-700">Inventory Alerts</h4>
-          <ul class="mt-3 text-slate-600">
+        <div class="p-3 md:p-4 rounded-lg bg-white shadow-card">
+          <h4 class="font-medium text-sm md:text-base text-slate-700">Inventory Alerts</h4>
+          <ul class="mt-3 text-xs md:text-sm text-slate-600">
             <template x-for="a in alerts" :key="a.id">
               <li class="py-2">• <span x-text="a.msg"></span></li>
             </template>
@@ -214,6 +262,37 @@
       </section>
     </main>
 
+    <script>
+      function toggleMobileMenu() {
+        const sidebar = document.getElementById('mobile-sidebar');
+        const overlay = document.getElementById('mobile-menu-overlay');
+        const isActive = sidebar.classList.contains('active');
+        
+        if (isActive) {
+          sidebar.classList.remove('active');
+          overlay.classList.remove('active');
+          document.body.style.overflow = '';
+        } else {
+          sidebar.classList.add('active');
+          overlay.classList.add('active');
+          document.body.style.overflow = 'hidden';
+        }
+      }
+      
+      // Close menu when clicking on a link
+      document.addEventListener('DOMContentLoaded', () => {
+        const sidebar = document.getElementById('mobile-sidebar');
+        if (sidebar) {
+          sidebar.querySelectorAll('a').forEach(link => {
+            link.addEventListener('click', () => {
+              if (window.innerWidth < 768) {
+                toggleMobileMenu();
+              }
+            });
+          });
+        }
+      });
+    </script>
     <script type="module" src="js/notifications.js"></script>
     <link rel="stylesheet" href="css/notifications.css" />
     <script type="module" src="js/dashboard.js"></script>
