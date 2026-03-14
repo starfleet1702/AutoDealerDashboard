@@ -105,7 +105,7 @@ window.inventory = function(){
         return;
       }
       try{
-        const { data, error } = await supabase.from('bikes').select('id,model,buy_price,status,dealer,color,year,registration_number,purchase_date').order('purchase_date', { ascending: false });
+        const { data, error } = await supabase.from('bikes').select('id,model,buy_price,status,dealer,color,year,registration_number,purchase_date,sell_date,notes,user_id').order('purchase_date', { ascending: false });
         console.log('Supabase bikes query result:', { data, error });
         if (error) throw error;
         const bikes = data || [];
@@ -130,6 +130,10 @@ window.inventory = function(){
           color: b.color,
           year: b.year,
           registration_number: b.registration_number || '',
+          purchase_date: b.purchase_date,
+          sell_date: b.sell_date,
+          notes: b.notes,
+          user_id: b.user_id,
           total_cost: Number(b.buy_price || 0) + (costByBike[b.id] || 0)
         }));
         this.filterBikes();
@@ -181,10 +185,13 @@ window.inventory = function(){
           registration_number: bike.registration_number
         }).eq('id', this.editingId).select();
         if (error) {
+          console.error('Update bike error:', error);
           this.error = error.message || 'Failed to update bike';
           this.loading = false;
+          if (window.notify && window.notify.error) window.notify.error('Update failed: ' + (error.message || 'Unknown error'));
           return;
         }
+        console.log('Bike updated successfully:', data);
         this.success = 'Bike updated';
         this.editingId = null;
         this.showForm = false;
