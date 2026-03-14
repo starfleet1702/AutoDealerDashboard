@@ -139,6 +139,7 @@
                 <a href="expenses.html" class="block px-3 py-2 rounded hover:bg-slate-50 text-slate-700">Expenses</a>
                 <a href="#" class="block px-3 py-2 rounded hover:bg-slate-50 text-slate-700">Receivables</a>
                 <a href="payables.html" class="block px-3 py-2 rounded hover:bg-slate-50 text-slate-700">Payables</a>
+                <a href="cash_ledger.html" class="block px-3 py-2 rounded hover:bg-slate-50 text-slate-700">Cash Ledger</a>
               </nav>
             </div>
           </div>
@@ -150,7 +151,7 @@
             <div class="lg:col-span-2">
           <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-4">
             <template x-for="card in cards" :key="card.key">
-              <a :href="card.key==='inventory' ? 'inventory.html' : '#'" style="text-decoration:none" :class="'block p-4 rounded-lg shadow-card bg-white dashboard-card ' + (card.key==='inventory' ? 'cursor-pointer hover:ring-2 hover:ring-indigo-400' : '')">
+              <a :href="card.key==='inventory' ? 'inventory.html' : card.key==='payables' ? 'payables.html' : card.key==='cash' || card.key==='bank' ? 'cash_ledger.html' : card.key==='receivables' ? '#' : '#'" style="text-decoration:none" :class="'block p-4 rounded-lg shadow-card bg-white dashboard-card ' + (['inventory','payables','cash','bank'].includes(card.key) ? 'cursor-pointer hover:ring-2 hover:ring-indigo-400' : '')">
                 <div class="flex items-center justify-between">
                   <div>
                     <div class="text-sm text-slate-500" x-text="card.title"></div>

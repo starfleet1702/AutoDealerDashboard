@@ -1,0 +1,53 @@
+/* Cash Ledger page styles */
+:root{ --card-bg: #ffffff; }
+.shadow-card { box-shadow: 0 8px 26px rgba(2,6,23,0.08); border-radius: 10px; }
+.rounded-lg { border-radius: 10px; }
+body { background: #f8fafc; }
+
+table thead th { font-weight: 600; }
+table tbody td { border-top: 1px solid #f1f5f9; padding: 0.75rem 0.5rem; }
+
+.sidebar .shadow-card { box-shadow: none; }
+
+/* Balance cards animation */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(-10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.p-4.bg-gradient-to-br {
+  animation: fadeIn 0.5s ease-out;
+}
+
+/* Table hover effect */
+table tbody tr:hover {
+  background-color: #f8fafc;
+  transition: background-color 0.2s;
+}
+
+/* Form inputs */
+.input, select, input[type="text"], input[type="number"], input[type="date"], textarea {
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  padding: 0.5rem 0.75rem;
+  font-size: 0.875rem;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.input:focus, select:focus, input:focus, textarea:focus {
+  outline: none;
+  border-color: #6366f1;
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+}
+
+/* Badge styles */
+.inline-block.px-2.py-1.rounded {
+  font-weight: 500;
+  letter-spacing: 0.025em;
+}
+
+@media (max-width: 640px){
+  .shadow-card { padding: 12px; }
+  table { font-size: 0.75rem; }
+  .grid.grid-cols-1.md\\:grid-cols-3 { grid-template-columns: 1fr; }
+}
