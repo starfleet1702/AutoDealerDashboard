@@ -1,3 +1,8 @@
+/**
+ * Receivables Management
+ * Similar to payables but for tracking amounts owed BY customers
+ */
+
 import { getSupabaseClient } from './supabaseClient.js';
 import { fetchAllParties, searchParties, createParty } from './partyService.js';
 import { createPartyTransaction, createInvoiceTransaction, createPaymentTransaction, fetchPartyTransactions } from './partyTransactionLedger.js';
@@ -27,7 +32,7 @@ async function initPartySearch() {
   // Load all parties on first focus
   searchInput.addEventListener('focus', async () => {
     if (allParties.length === 0) {
-      allParties = await fetchAllParties('vendor');
+      allParties = await fetchAllParties();
     }
     renderPartyList(allParties);
     dropdown.classList.remove('hidden');
@@ -38,13 +43,13 @@ async function initPartySearch() {
     const searchTerm = e.target.value.trim();
 
     if (searchTerm.length === 0) {
-      // Show all vendors
-      allParties = await fetchAllParties('vendor');
+      // Show all parties
+      allParties = await fetchAllParties();
       renderPartyList(allParties);
       createOption.classList.add('hidden');
     } else {
       // Search parties
-      const results = await searchParties(searchTerm, 'vendor');
+      const results = await searchParties(searchTerm);
       renderPartyList(results);
 
       // Show create option if no exact match
@@ -60,12 +65,11 @@ async function initPartySearch() {
     dropdown.classList.remove('hidden');
   });
 
-  // Handle create new vendor
+  // Handle create new party
   createOption.addEventListener('click', async () => {
     const newName = qs('#party-search').value.trim();
     const newParty = await createParty({
-      name: newName,
-      party_type: 'vendor'
+      name: newName
     });
     
     if (newParty) {
@@ -90,7 +94,7 @@ function renderPartyList(parties) {
   partyList.innerHTML = '';
 
   if (parties.length === 0) {
-    partyList.innerHTML = '<div class="p-2 text-slate-500 text-sm">No vendors found</div>';
+    partyList.innerHTML = '<div class="p-2 text-slate-500 text-sm">No parties found</div>';
     return;
   }
 
@@ -119,12 +123,12 @@ function selectParty(party) {
 }
 
 /**
- * Fetch and display payables with party names
+ * Fetch and display receivables with party names
  */
-async function loadPayables(){
-  const tbody = qs('#payables-tbody');
-  const loading = qs('#payables-loading');
-  const tableContainer = qs('#payables-table-container');
+async function loadReceivables(){
+  const tbody = qs('#receivables-tbody');
+  const loading = qs('#receivables-loading');
+  const tableContainer = qs('#receivables-table-container');
   
   // Show loading spinner, hide table
   loading.classList.remove('hidden');
@@ -139,7 +143,7 @@ async function loadPayables(){
   }
 
   let query = supabase
-    .from('payables')
+    .from('receivables')
     .select(`
       *,
       parties (id, name, phone)
@@ -160,8 +164,8 @@ async function loadPayables(){
   }
   
   if(!data || data.length===0){
-    tbody.innerHTML = '<tr><td colspan="7" class="py-6 text-center text-slate-500">No payables found.</td></tr>';
-    updateTotalPayables(0);
+    tbody.innerHTML = '<tr><td colspan="7" class="py-6 text-center text-slate-500">No receivables found.</td></tr>';
+    updateTotalReceivables(0);
     loading.classList.add('hidden');
     tableContainer.classList.remove('hidden');
     return;
@@ -170,47 +174,47 @@ async function loadPayables(){
   tbody.innerHTML = '';
   let totalPending = 0;
 
-  for(const p of data){
-    const dueDate = p.due_date ? new Date(p.due_date).toLocaleDateString() : '-';
-    const isOverdue = p.due_date && new Date(p.due_date) < new Date() && p.status === 'pending';
+  for(const r of data){
+    const dueDate = r.due_date ? new Date(r.due_date).toLocaleDateString() : '-';
+    const isOverdue = r.due_date && new Date(r.due_date) < new Date() && r.status === 'pending';
     const rowClass = isOverdue ? 'bg-red-50' : '';
-    const statusColor = p.status === 'cleared' ? 'text-green-600' : 'text-red-600';
+    const statusColor = r.status === 'cleared' ? 'text-green-600' : 'text-blue-600';
     
-    // Get vendor name from party or legacy vendor_name
-    const vendorName = p.parties?.name || p.vendor_name || '-';
+    // Get customer name from party or legacy customer_id
+    const customerName = r.parties?.name || r.customer_name || '-';
     
-    if (p.status === 'pending') {
-      totalPending += Number(p.pending_amount || 0);
+    if (r.status === 'pending') {
+      totalPending += Number(r.pending_amount || 0);
     }
 
     const tr = document.createElement('tr');
     tr.className = rowClass;
     tr.innerHTML = `
       <td class="py-2 pr-4">
-        <div class="font-medium cursor-pointer text-indigo-600 hover:text-indigo-800 party-name-link" data-party-id="${p.party_id}" data-party-name="${p.parties?.name || p.vendor_name || '-'}">${vendorName}</div>
-        ${p.bike_id ? `<div class="text-xs text-slate-500">Bike #${p.bike_id}</div>` : ''}
-        ${p.notes ? `<div class="text-xs text-slate-500">${p.notes.length > 40 ? p.notes.slice(0,40)+'...' : p.notes}</div>` : ''}
+        <div class="font-medium cursor-pointer text-indigo-600 hover:text-indigo-800 party-name-link" data-party-id="${r.party_id}" data-party-name="${r.parties?.name || r.customer_name || '-'}">${customerName}</div>
+        ${r.bike_id ? `<div class="text-xs text-slate-500">Bike #${r.bike_id}</div>` : ''}
+        ${r.notes ? `<div class="text-xs text-slate-500">${r.notes.length > 40 ? r.notes.slice(0,40)+'...' : r.notes}</div>` : ''}
       </td>
-      <td class="py-2 pr-4">${formatCurrency(p.total_amount)}</td>
-      <td class="py-2 pr-4">${formatCurrency(p.amount_paid)}</td>
-      <td class="py-2 pr-4 font-semibold ${statusColor}">${formatCurrency(p.pending_amount)}</td>
+      <td class="py-2 pr-4">${formatCurrency(r.total_amount)}</td>
+      <td class="py-2 pr-4">${formatCurrency(r.amount_paid)}</td>
+      <td class="py-2 pr-4 font-semibold ${statusColor}">${formatCurrency(r.pending_amount)}</td>
       <td class="py-2 pr-4">${dueDate}${isOverdue ? ' <span class="text-xs text-red-600 font-semibold">(OVERDUE)</span>' : ''}</td>
       <td class="py-2 pr-4">
-        <span class="inline-block px-2 py-1 rounded text-xs ${p.status === 'cleared' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}">
-          ${p.status}
+        <span class="inline-block px-2 py-1 rounded text-xs ${r.status === 'cleared' ? 'bg-green-100 text-green-700' : 'bg-blue-100 text-blue-700'}">
+          ${r.status}
         </span>
       </td>
       <td class="py-2 space-x-2">
-        ${p.status === 'pending' ? `<button class="pay-btn text-sm text-green-600 hover:text-green-800" data-id="${p.id}" data-party-id="${p.party_id}" data-party-name="${p.parties?.name || p.vendor_name || '-'}" data-total="${p.total_amount}" data-paid="${p.amount_paid}">Pay</button>` : ''}
-        <button class="edit-btn text-sm text-indigo-600 hover:text-indigo-800 mr-2" data-id="${p.id}">Edit</button>
-        <button class="delete-btn text-sm text-red-600 hover:text-red-800" data-id="${p.id}">Delete</button>
+        ${r.status === 'pending' ? `<button class="pay-btn text-sm text-green-600 hover:text-green-800" data-id="${r.id}" data-party-id="${r.party_id}" data-party-name="${r.parties?.name || r.customer_name || '-'}" data-total="${r.total_amount}" data-paid="${r.amount_paid}">Receive</button>` : ''}
+        <button class="edit-btn text-sm text-indigo-600 hover:text-indigo-800 mr-2" data-id="${r.id}">Edit</button>
+        <button class="delete-btn text-sm text-red-600 hover:text-red-800" data-id="${r.id}">Delete</button>
       </td>
     `;
     tbody.appendChild(tr);
   }
 
   // Update total
-  updateTotalPayables(totalPending);
+  updateTotalReceivables(totalPending);
 
   // attach handlers
   qsa('.edit-btn').forEach(btn => btn.addEventListener('click', onEdit));
@@ -223,8 +227,8 @@ async function loadPayables(){
   tableContainer.classList.remove('hidden');
 }
 
-function updateTotalPayables(total) {
-  const totalEl = qs('#total-payables');
+function updateTotalReceivables(total) {
+  const totalEl = qs('#total-receivables');
   if (totalEl) {
     totalEl.textContent = formatCurrency(total);
   }
@@ -236,7 +240,7 @@ async function onEdit(ev){
   
   const supabase = await getSupabaseClient();
   const { data, error } = await supabase
-    .from('payables')
+    .from('receivables')
     .select(`
       *,
       parties (id, name, phone)
@@ -245,21 +249,21 @@ async function onEdit(ev){
     .single();
   
   if (error || !data) {
-    alert('Failed to load payable data');
+    alert('Failed to load receivable data');
     return;
   }
 
   // Populate form
-  qs('#payable-id').value = data.id;
+  qs('#receivable-id').value = data.id;
   
   // Set party if it exists
   if (data.party_id && data.parties) {
     selectedPartyId = data.party_id;
     qs('#party-id').value = data.party_id;
     qs('#party-search').value = data.parties.name;
-  } else if (data.vendor_name) {
-    // Fallback for legacy vendor_name
-    qs('#party-search').value = data.vendor_name;
+  } else if (data.customer_name) {
+    // Fallback for legacy customer_name
+    qs('#party-search').value = data.customer_name;
   }
   
   qs('#total_amount').value = data.total_amount || '';
@@ -270,19 +274,19 @@ async function onEdit(ev){
   qs('#notes').value = data.notes || '';
   
   // Update UI
-  qs('#form-title').textContent = 'Edit Payable';
+  qs('#form-title').textContent = 'Edit Receivable';
   qs('#cancel-btn').classList.remove('hidden');
   
   // Scroll to form
-  qs('#payable-form').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  qs('#receivable-form').scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 
 async function onDelete(ev){
   const id = ev.currentTarget.dataset.id;
-  if(!confirm('Delete this payable record?')) return;
+  if(!confirm('Delete this receivable record?')) return;
   
   const supabase = await getSupabaseClient();
-  const { error } = await supabase.from('payables').delete().eq('id', id);
+  const { error } = await supabase.from('receivables').delete().eq('id', id);
   
   if(error){
     const status = qs('#form-status');
@@ -295,173 +299,21 @@ async function onDelete(ev){
     return;
   }
   
-  await loadPayables();
-}
-
-async function onSubmit(ev){
-  ev.preventDefault();
-  const status = qs('#form-status');
-  
-  const partySearch = qs('#party-search').value.trim();
-  const partyIdVal = qs('#party-id').value;
-  const total_amount = qs('#total_amount').value;
-  const amount_paid = qs('#amount_paid').value || 0;
-  const due_date = qs('#due_date').value || null;
-  const bike_id_raw = qs('#bike_id').value;
-  const bike_id = bike_id_raw ? Number(bike_id_raw) : null;
-  const payableStatus = qs('#status').value;
-  const notes = qs('#notes').value.trim() || null;
-
-  // Validate party
-  if(!partySearch){
-    status.textContent = 'Vendor/Dealer is required';
-    status.className = 'text-sm text-red-600';
-    return;
-  }
-
-  if(!total_amount || Number(total_amount) <= 0){
-    status.textContent = 'Enter valid total amount';
-    status.className = 'text-sm text-red-600';
-    return;
-  }
-
-  if(Number(amount_paid) > Number(total_amount)){
-    status.textContent = 'Amount paid cannot exceed total amount';
-    status.className = 'text-sm text-red-600';
-    return;
-  }
-
-  status.textContent = 'Saving...';
-  status.className = 'text-sm text-slate-600';
-
-  const supabase = await getSupabaseClient();
-  let partyId = selectedPartyId || (partyIdVal ? Number(partyIdVal) : null);
-
-  // Get or create party if not selected via dropdown
-  if (!partyId) {
-    const newParty = await createParty({
-      name: partySearch,
-      party_type: 'vendor'
-    });
-    
-    if (!newParty) {
-      status.textContent = 'Failed to create vendor';
-      status.className = 'text-sm text-red-600';
-      return;
-    }
-    
-    partyId = newParty.id;
-    selectedPartyId = partyId;
-    qs('#party-id').value = partyId;
-  }
-
-  const totalAmountNum = Number(Number(total_amount).toFixed(2));
-  const amountPaidNum = Number(Number(amount_paid).toFixed(2));
-
-  const payload = { 
-    party_id: partyId,
-    vendor_name: partySearch, // Keep for legacy compatibility
-    total_amount: totalAmountNum, 
-    amount_paid: amountPaidNum,
-    due_date, 
-    bike_id, 
-    status: payableStatus,
-    notes 
-  };
-
-  let result;
-  let payableRecord;
-  
-  if (editingId) {
-    // Update existing
-    result = await supabase.from('payables').update(payload).eq('id', editingId).select().single();
-    payableRecord = result.data;
-  } else {
-    // Insert new
-    result = await supabase.from('payables').insert([payload]).select().single();
-    payableRecord = result.data;
-    
-    // Create initial invoice transaction for new payable
-    if (payableRecord && partyId) {
-      await createInvoiceTransaction(
-        partyId,
-        totalAmountNum,
-        'payable',
-        payableRecord.id,
-        `Invoice: ${partySearch}`
-      );
-    }
-  }
-
-  const { error } = result;
-
-  if(error){
-    status.textContent = 'Save failed: '+error.message;
-    status.className = 'text-sm text-red-600';
-    return;
-  }
-
-  // Create payment transaction if amount paid > 0 and is new record
-  if (payableRecord && amountPaidNum > 0 && !editingId) {
-    await createPaymentTransaction(
-      partyId,
-      amountPaidNum,
-      'payable',
-      payableRecord.id,
-      'Payment made'
-    );
-  }
-
-  // Clear form
-  resetForm();
-  
-  status.textContent = editingId ? 'Updated successfully!' : 'Saved successfully!';
-  status.className = 'text-sm text-green-600';
-  setTimeout(()=> { 
-    status.textContent = ''; 
-    status.className = 'text-sm text-slate-600';
-  }, 2000);
-  
-  editingId = null;
-  selectedPartyId = null;
-  await loadPayables();
-}
-
-function resetForm() {
-  qs('#payable-id').value = '';
-  qs('#party-id').value = '';
-  qs('#party-search').value = '';
-  qs('#total_amount').value = '';
-  qs('#amount_paid').value = '0';
-  qs('#due_date').value = '';
-  qs('#bike_id').value = '';
-  qs('#status').value = 'pending';
-  qs('#notes').value = '';
-  qs('#form-title').textContent = 'Add Payable';
-  qs('#cancel-btn').classList.add('hidden');
-  editingId = null;
-  selectedPartyId = null;
-}
-
-function onCancel() {
-  resetForm();
-  const status = qs('#form-status');
-  status.textContent = '';
-  status.className = 'text-sm text-slate-600';
+  await loadReceivables();
 }
 
 /**
- * Open payment modal for a payable
+ * Open payment modal for a receivable
  */
 function onOpenPaymentModal(ev) {
-  const payableId = ev.currentTarget.dataset.id;
+  const receivableId = ev.currentTarget.dataset.id;
   const partyId = ev.currentTarget.dataset.partyId;
   const partyName = ev.currentTarget.dataset.partyName;
   const total = Number(ev.currentTarget.dataset.total);
   const paid = Number(ev.currentTarget.dataset.paid);
   const pending = total - paid;
 
-  qs('#payment-payable-id').value = payableId;
+  qs('#payment-receivable-id').value = receivableId;
   qs('#payment-party-name').textContent = partyName;
   qs('#payment-total').textContent = formatCurrency(total);
   qs('#payment-already-paid').textContent = formatCurrency(paid);
@@ -470,7 +322,7 @@ function onOpenPaymentModal(ev) {
   qs('#payment-amount-error').textContent = '';
   qs('#payment-form-status').textContent = '';
   qs('#payment-notes').value = '';
-  qs('#transaction-direction').value = 'credit';
+  qs('#transaction-direction').value = 'debit';
 
   qs('#payment-modal').classList.remove('hidden');
 }
@@ -523,9 +375,9 @@ async function onViewPartyLedger(ev) {
  */
 async function onPaymentSubmit(ev) {
   ev.preventDefault();
-  const payableId = qs('#payment-payable-id').value;
+  const receivableId = qs('#payment-receivable-id').value;
   const amount = Number(qs('#payment-amount').value);
-  const direction = qs('#transaction-direction').value; // 'credit' or 'debit'
+  const direction = qs('#transaction-direction').value; // 'debit' or 'credit'
   const notes = qs('#payment-notes').value.trim() || null;
   const status = qs('#payment-form-status');
   const errorDiv = qs('#payment-amount-error');
@@ -538,9 +390,9 @@ async function onPaymentSubmit(ev) {
 
   const pending = Number(qs('#payment-pending').textContent.replace(/[^\d.]/g, ''));
   
-  // For credit (amount paid), limit to pending amount
-  // For debit (amount taken), allow any amount
-  if (direction === 'credit' && amount > pending) {
+  // For debit (amount received), limit to pending amount
+  // For credit (adjustment), allow any amount
+  if (direction === 'debit' && amount > pending) {
     errorDiv.textContent = `Cannot exceed pending amount (₹${pending.toFixed(2)})`;
     return;
   }
@@ -550,60 +402,60 @@ async function onPaymentSubmit(ev) {
 
   const supabase = await getSupabaseClient();
 
-  // Fetch current payable to get party_id
-  const { data: payableData, error: fetchError } = await supabase
-    .from('payables')
+  // Fetch current receivable to get party_id
+  const { data: receivableData, error: fetchError } = await supabase
+    .from('receivables')
     .select('*')
-    .eq('id', Number(payableId))
+    .eq('id', Number(receivableId))
     .single();
 
-  if (fetchError || !payableData) {
-    status.textContent = 'Failed to load payable record';
+  if (fetchError || !receivableData) {
+    status.textContent = 'Failed to load receivable record';
     status.className = 'text-sm text-red-600';
     return;
   }
 
   // Calculate new amount paid based on direction
-  // Credit (amount paid): increases amount_paid
-  // Debit (amount taken): decreases amount_paid
-  const newAmountPaid = direction === 'credit' 
-    ? payableData.amount_paid + amount 
-    : payableData.amount_paid - amount;
+  // Debit (amount received): increases amount_paid, decreases pending
+  // Credit (adjustment): decreases amount_paid, increases pending
+  const newAmountPaid = direction === 'debit' 
+    ? receivableData.amount_paid + amount 
+    : receivableData.amount_paid - amount;
 
   // Ensure amount_paid doesn't go below 0
   if (newAmountPaid < 0) {
-    status.textContent = 'Cannot take more than amount already paid';
+    status.textContent = 'Cannot adjust more than amount already received';
     status.className = 'text-sm text-red-600';
     return;
   }
 
-  const newPending = payableData.total_amount - newAmountPaid;
+  const newPending = receivableData.total_amount - newAmountPaid;
 
-  // Update payables record with new amount_paid
+  // Update receivables record with new amount_paid
   const { error: updateError } = await supabase
-    .from('payables')
+    .from('receivables')
     .update({
       amount_paid: Number(newAmountPaid.toFixed(2)),
       status: newPending <= 0 ? 'cleared' : 'pending'
     })
-    .eq('id', Number(payableId));
+    .eq('id', Number(receivableId));
 
   if (updateError) {
-    status.textContent = 'Failed to update payable: ' + updateError.message;
+    status.textContent = 'Failed to update receivable: ' + updateError.message;
     status.className = 'text-sm text-red-600';
     return;
   }
 
   // Create transaction ledger entry
-  const txnType = direction === 'credit' ? 'payment' : 'adjustment';
+  const txnType = direction === 'debit' ? 'payment' : 'adjustment';
   const txnResult = await createPartyTransaction({
-    party_id: payableData.party_id,
+    party_id: receivableData.party_id,
     entry_type: txnType,
     direction: direction,
     amount: amount,
-    reference_type: 'payable',
-    reference_id: Number(payableId),
-    description: direction === 'credit' ? 'Amount Paid' : 'Amount Taken',
+    reference_type: 'receivable',
+    reference_id: Number(receivableId),
+    description: direction === 'debit' ? 'Amount Received' : 'Amount Adjusted',
     notes: notes
   });
 
@@ -616,13 +468,163 @@ async function onPaymentSubmit(ev) {
     
     setTimeout(() => {
       qs('#payment-modal').classList.add('hidden');
-      loadPayables();
+      loadReceivables();
     }, 1000);
   }
 }
 
+async function onSubmit(ev){
+  ev.preventDefault();
+  const status = qs('#form-status');
+  
+  const partySearch = qs('#party-search').value.trim();
+  const partyIdVal = qs('#party-id').value;
+  const total_amount = qs('#total_amount').value;
+  const amount_paid = qs('#amount_paid').value || 0;
+  const due_date = qs('#due_date').value || null;
+  const bike_id_raw = qs('#bike_id').value;
+  const bike_id = bike_id_raw ? Number(bike_id_raw) : null;
+  const receivableStatus = qs('#status').value;
+  const notes = qs('#notes').value.trim() || null;
+
+  // Validate party
+  if(!partySearch){
+    status.textContent = 'Party is required';
+    status.className = 'text-sm text-red-600';
+    return;
+  }
+
+  if(!total_amount || Number(total_amount) <= 0){
+    status.textContent = 'Enter valid total amount';
+    status.className = 'text-sm text-red-600';
+    return;
+  }
+
+  if(Number(amount_paid) > Number(total_amount)){
+    status.textContent = 'Amount received cannot exceed total amount';
+    status.className = 'text-sm text-red-600';
+    return;
+  }
+
+  status.textContent = 'Saving...';
+  status.className = 'text-sm text-slate-600';
+
+  const supabase = await getSupabaseClient();
+  let partyId = selectedPartyId || (partyIdVal ? Number(partyIdVal) : null);
+
+  // Get or create party if not selected via dropdown
+  if (!partyId) {
+    const newParty = await createParty({
+      name: partySearch
+    });
+    
+    if (!newParty) {
+      status.textContent = 'Failed to create party';
+      status.className = 'text-sm text-red-600';
+      return;
+    }
+    
+    partyId = newParty.id;
+    selectedPartyId = partyId;
+    qs('#party-id').value = partyId;
+  }
+
+  const totalAmountNum = Number(Number(total_amount).toFixed(2));
+  const amountPaidNum = Number(Number(amount_paid).toFixed(2));
+
+  const payload = { 
+    party_id: partyId,
+    total_amount: totalAmountNum, 
+    amount_paid: amountPaidNum,
+    due_date, 
+    bike_id, 
+    status: receivableStatus,
+    notes 
+  };
+
+  let result;
+  let receivableRecord;
+  
+  if (editingId) {
+    // Update existing
+    result = await supabase.from('receivables').update(payload).eq('id', editingId).select().single();
+    receivableRecord = result.data;
+  } else {
+    // Insert new
+    result = await supabase.from('receivables').insert([payload]).select().single();
+    receivableRecord = result.data;
+    
+    // Create initial invoice transaction for new receivable
+    if (receivableRecord && partyId) {
+      await createInvoiceTransaction(
+        partyId,
+        totalAmountNum,
+        'receivable',
+        receivableRecord.id,
+        `Invoice: ${partySearch}`
+      );
+    }
+  }
+
+  const { error } = result;
+
+  if(error){
+    status.textContent = 'Save failed: '+error.message;
+    status.className = 'text-sm text-red-600';
+    return;
+  }
+
+  // Create payment transaction if amount paid > 0 and is new record
+  if (receivableRecord && amountPaidNum > 0 && !editingId) {
+    await createPaymentTransaction(
+      partyId,
+      amountPaidNum,
+      'receivable',
+      receivableRecord.id,
+      'Payment received'
+    );
+  }
+
+  // Clear form
+  resetForm();
+  
+  status.textContent = editingId ? 'Updated successfully!' : 'Saved successfully!';
+  status.className = 'text-sm text-green-600';
+  setTimeout(()=> { 
+    status.textContent = ''; 
+    status.className = 'text-sm text-slate-600';
+  }, 2000);
+  
+  editingId = null;
+  selectedPartyId = null;
+  await loadReceivables();
+}
+
+function resetForm() {
+  qs('#receivable-id').value = '';
+  qs('#party-id').value = '';
+  qs('#party-search').value = '';
+  qs('#total_amount').value = '';
+  qs('#amount_paid').value = '0';
+  qs('#due_date').value = '';
+  qs('#bike_id').value = '';
+  qs('#status').value = 'pending';
+  qs('#notes').value = '';
+  qs('#form-title').textContent = 'Add Receivable';
+  qs('#cancel-btn').classList.add('hidden');
+  editingId = null;
+  selectedPartyId = null;
+}
+
+function onCancel() {
+  resetForm();
+  const status = qs('#form-status');
+  status.textContent = '';
+  status.className = 'text-sm text-slate-600';
+}
+
 function init(){
-  const form = qs('#payable-form');
+  const form = qs('#receivable-form');
   form.addEventListener('submit', onSubmit);
   
   const cancelBtn = qs('#cancel-btn');
@@ -651,17 +653,17 @@ function init(){
     currentFilter = 'pending';
     qs('#filter-pending').className = 'px-3 py-1 text-sm bg-indigo-100 text-indigo-700 rounded hover:bg-indigo-200';
     qs('#filter-all').className = 'px-3 py-1 text-sm bg-slate-100 text-slate-700 rounded hover:bg-slate-200';
-    loadPayables();
+    loadReceivables();
   });
 
   qs('#filter-all').addEventListener('click', () => {
     currentFilter = 'all';
     qs('#filter-all').className = 'px-3 py-1 text-sm bg-indigo-100 text-indigo-700 rounded hover:bg-indigo-200';
     qs('#filter-pending').className = 'px-3 py-1 text-sm bg-slate-100 text-slate-700 rounded hover:bg-slate-200';
-    loadPayables();
+    loadReceivables();
   });
   
-  loadPayables();
+  loadReceivables();
 }
 
 // Initialize when DOM is ready

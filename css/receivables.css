@@ -1,0 +1,64 @@
+/**
+ * Receivables Page Styles
+ */
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+#payment-modal {
+  animation: slideIn 0.2s ease-out;
+}
+
+#ledger-modal {
+  animation: slideIn 0.2s ease-out;
+}
+
+/* Table styling */
+#receivables-table {
+  border-collapse: collapse;
+}
+
+#receivables-table tr {
+  border-bottom: 1px solid #e2e8f0;
+}
+
+#receivables-table tr:hover {
+  background-color: #f8fafc;
+}
+
+/* Party name link styling */
+.party-name-link {
+  text-decoration: none;
+  transition: color 0.2s;
+}
+
+.party-name-link:hover {
+  text-decoration: underline;
+}
+
+/* Status badge styling */
+.status-badge {
+  display: inline-block;
+  padding: 0.25rem 0.5rem;
+  border-radius: 0.25rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.status-pending {
+  background-color: #dbeafe;
+  color: #1e40af;
+}
+
+.status-cleared {
+  background-color: #dcfce7;
+  color: #166534;
+}

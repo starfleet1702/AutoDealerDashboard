@@ -93,6 +93,25 @@ window.inventory = function(){
       costs: [],
       registration_number: ''
     },
+    // Mark Sold Modal State
+    showMarkSoldModal: false,
+    markSoldBike: null,
+    markSoldForm: {
+      sale_date: new Date().toISOString().slice(0,10),
+      sell_price: null,
+      profit: null,
+      channel: '',
+      customer_name: '',
+      customer_phone: '',
+      payment_mode: 'cash',
+      amount_paid: null,
+      cash_amount: null,
+      online_amount: null,
+      notes: ''
+    },
+    markSoldLoading: false,
+    markSoldError: '',
+    markSoldSuccess: '',
     modelHistory: JSON.parse(localStorage.getItem('modelHistory')||'[]'),
     colorHistory: JSON.parse(localStorage.getItem('colorHistory')||'[]'),
     dealerHistory: JSON.parse(localStorage.getItem('dealerHistory')||'[]'),
@@ -223,5 +242,169 @@ window.inventory = function(){
     },
     resetForm(){ this.form = { model:'', year:'', color:'', buy_price:null, dealer:'', status:'in_stock', purchase_date:new Date().toISOString().slice(0,10), sell_date:'', notes:'', costs:[], registration_number:'' } },
     formatCurrency(v){ if (v === null || v === undefined) return '-'; return '₹' + Number(v).toLocaleString(); },
+    async openMarkSoldModal(bike) {
+      this.markSoldBike = bike;
+      this.markSoldForm = {
+        sale_date: new Date().toISOString().slice(0,10),
+        sell_price: null,
+        profit: null,
+        channel: '',
+        customer_name: '',
+        customer_phone: '',
+        payment_mode: 'cash',
+        amount_paid: null,
+        cash_amount: null,
+        online_amount: null,
+        notes: ''
+      };
+      this.markSoldError = '';
+      this.markSoldSuccess = '';
+      this.showMarkSoldModal = true;
+    },
+    resetMarkSoldForm() {
+      this.markSoldBike = null;
+      this.markSoldForm = {
+        sale_date: new Date().toISOString().slice(0,10),
+        sell_price: null,
+        profit: null,
+        channel: '',
+        customer_name: '',
+        customer_phone: '',
+        payment_mode: 'cash',
+        amount_paid: null,
+        cash_amount: null,
+        online_amount: null,
+        notes: ''
+      };
+      this.markSoldError = '';
+      this.markSoldSuccess = '';
+    },
+    async submitMarkSold() {
+      this.markSoldError = '';
+      this.markSoldSuccess = '';
+      this.markSoldLoading = true;
+
+      // Validate required fields
+      const { sell_price, channel, payment_mode, amount_paid, sale_date } = this.markSoldForm;
+      
+      if (!sell_price || sell_price <= 0) {
+        this.markSoldError = 'Selling price is required and must be greater than 0';
+        this.markSoldLoading = false;
+        return;
+      }
+
+      if (!channel) {
+        this.markSoldError = 'Sale channel is required';
+        this.markSoldLoading = false;
+        return;
+      }
+
+      if (!payment_mode) {
+        this.markSoldError = 'Payment mode is required';
+        this.markSoldLoading = false;
+        return;
+      }
+
+      if (amount_paid === null || amount_paid < 0) {
+        this.markSoldError = 'Amount received must be specified';
+        this.markSoldLoading = false;
+        return;
+      }
+
+      // Validate mixed payment
+      if (payment_mode === 'mixed') {
+        const cashAmount = Number(this.markSoldForm.cash_amount || 0);
+        const onlineAmount = Number(this.markSoldForm.online_amount || 0);
+        if (cashAmount + onlineAmount !== Number(amount_paid)) {
+          this.markSoldError = 'Cash + Online amount must equal total amount received';
+          this.markSoldLoading = false;
+          return;
+        }
+      }
+
+      try {
+        const supabase = await getSupabaseClient();
+        if (!supabase) {
+          this.markSoldError = 'Supabase not configured';
+          this.markSoldLoading = false;
+          return;
+        }
+
+        // Import sales service
+        const { createSale, markBikeSold } = await import('./salesService.js');
+
+        // Record the sale
+        const saleData = {
+          bike_id: this.markSoldBike.id,
+          sell_price: Number(sell_price),
+          total_cost: this.markSoldBike.total_cost,
+          sell_date: sale_date,
+          channel: channel,
+          payment_mode: payment_mode,
+          amount_paid: Number(amount_paid),
+          notes: (this.markSoldForm.notes || '') + (this.markSoldForm.profit ? ` [Profit Adj: ${this.markSoldForm.profit}]` : '')
+        };
+
+        const saleResult = await createSale(saleData);
+        if (!saleResult) {
+          this.markSoldError = 'Failed to create sale record';
+          this.markSoldLoading = false;
+          return;
+        }
+
+        // Update bike status to sold
+        const updateResult = await markBikeSold(this.markSoldBike.id, sale_date);
+        if (!updateResult) {
+          this.markSoldError = 'Failed to update bike status';
+          this.markSoldLoading = false;
+          return;
+        }
+
+        // Create receivable if payment is pending
+        if (Number(amount_paid) < Number(sell_price)) {
+          const { createReceivableFromSale } = await import('./salesService.js');
+          
+          // Create or use existing customer party
+          let partyId = null;
+          if (this.markSoldForm.customer_name) {
+            // Try to find or create the customer as a party
+            const { searchParties, createParty } = await import('./partyService.js');
+            const existingParties = await searchParties(this.markSoldForm.customer_name, 'customer');
+            
+            if (existingParties && existingParties.length > 0) {
+              partyId = existingParties[0].id;
+            } else {
+              const newParty = await createParty({
+                name: this.markSoldForm.customer_name,
+                phone: this.markSoldForm.customer_phone || null,
+                party_type: 'customer'
+              });
+              if (newParty) partyId = newParty.id;
+            }
+          }
+
+          if (partyId) {
+            await createReceivableFromSale({
+              bike_id: this.markSoldBike.id,
+              party_id: partyId,
+              total_amount: Number(sell_price),
+              amount_paid: Number(amount_paid),
+              notes: `Sale recorded from bike #${this.markSoldBike.id}`
+            });
+          }
+        }
+
+        this.markSoldSuccess = 'Bike marked as sold successfully!';
+        setTimeout(() => {
+          this.showMarkSoldModal = false;
+          this.resetMarkSoldForm();
+          this.load(); // Reload inventory
+        }, 1000);
+      } catch (err) {
+        this.markSoldError = 'Error: ' + (err.message || 'Unknown error occurred');
+      }
+      
+      this.markSoldLoading = false;
+    }
   };
 };

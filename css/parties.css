@@ -1,0 +1,31 @@
+/* Parties page styles */
+:root{ --card-bg: #ffffff; }
+.shadow-card { box-shadow: 0 8px 26px rgba(2,6,23,0.08); border-radius: 10px; }
+.rounded-lg { border-radius: 10px; }
+body { background: #f8fafc; }
+
+table thead th { font-weight: 600; }
+table tbody td { border-top: 1px solid #f1f5f9; padding: 0.75rem 0.5rem; }
+
+.sidebar .shadow-card { box-shadow: none; }
+
+/* Modal styles */
+#ledger-modal {
+  animation: slideIn 0.3s ease-out;
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (max-width: 640px){
+  .shadow-card { padding: 12px; }
+  #ledger-modal { padding: 1rem; }
+}
