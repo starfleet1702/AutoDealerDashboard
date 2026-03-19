@@ -27,17 +27,37 @@ export async function createSale(saleData) {
   }
 
   try {
+    // Prepare payload with proper null/empty handling
+    const payload = {
+      bike_id: saleData.bike_id,
+      sell_price: saleData.sell_price,
+      total_cost: saleData.total_cost,
+      sell_date: saleData.sell_date || null,
+      channel: saleData.channel || null,
+      payment_mode: saleData.payment_mode || 'cash',
+      amount_paid: saleData.amount_paid || 0,
+      notes: saleData.notes || null
+    };
+
+    console.log('Creating sale with payload:', payload);
+
     const { data, error } = await supabase
       .from('sales')
-      .insert([saleData])
+      .insert([payload])
       .select()
       .single();
 
     if (error) {
-      console.error('Error creating sale:', error.message);
+      console.error('Error creating sale:', {
+        message: error.message,
+        details: error.details,
+        hint: error.hint,
+        code: error.code
+      });
       return null;
     }
 
+    console.log('Sale created successfully:', data);
     return data;
   } catch (err) {
     console.error('Exception in createSale:', err);

@@ -103,7 +103,7 @@ window.inventory = function(){
       channel: '',
       customer_name: '',
       customer_phone: '',
-      payment_mode: 'cash',
+      payment_mode: '',
       amount_paid: null,
       cash_amount: null,
       online_amount: null,
@@ -116,11 +116,14 @@ window.inventory = function(){
     colorHistory: JSON.parse(localStorage.getItem('colorHistory')||'[]'),
     dealerHistory: JSON.parse(localStorage.getItem('dealerHistory')||'[]'),
     editingId: null,
+    pageLoading: true,
     async load(){
+      this.pageLoading = true;
       const supabase = await getSupabaseClient();
       if (!supabase) {
         this.error = 'Supabase client not configured. Cannot load inventory.';
         this.bikes = [];
+        this.pageLoading = false;
         return;
       }
       try{
@@ -156,11 +159,13 @@ window.inventory = function(){
           total_cost: Number(b.buy_price || 0) + (costByBike[b.id] || 0)
         }));
         this.filterBikes();
+        this.pageLoading = false;
       }catch(e){
         console.error('Failed to load bikes from Supabase', e);
         this.error = e.message || 'Failed to load bikes';
         this.bikes = [];
         this.filteredBikes = [];
+        this.pageLoading = false;
       }
     },
     filterBikes(){
@@ -251,7 +256,7 @@ window.inventory = function(){
         channel: '',
         customer_name: '',
         customer_phone: '',
-        payment_mode: 'cash',
+        payment_mode: '',
         amount_paid: null,
         cash_amount: null,
         online_amount: null,
@@ -270,7 +275,7 @@ window.inventory = function(){
         channel: '',
         customer_name: '',
         customer_phone: '',
-        payment_mode: 'cash',
+        payment_mode: '',
         amount_paid: null,
         cash_amount: null,
         online_amount: null,
@@ -284,7 +289,7 @@ window.inventory = function(){
       this.markSoldSuccess = '';
       this.markSoldLoading = true;
 
-      // Validate required fields
+      // Validate required fields (payment details are optional)
       const { sell_price, channel, payment_mode, amount_paid, sale_date } = this.markSoldForm;
       
       if (!sell_price || sell_price <= 0) {
@@ -299,23 +304,11 @@ window.inventory = function(){
         return;
       }
 
-      if (!payment_mode) {
-        this.markSoldError = 'Payment mode is required';
-        this.markSoldLoading = false;
-        return;
-      }
-
-      if (amount_paid === null || amount_paid < 0) {
-        this.markSoldError = 'Amount received must be specified';
-        this.markSoldLoading = false;
-        return;
-      }
-
-      // Validate mixed payment
-      if (payment_mode === 'mixed') {
+      // Validate mixed payment only if payment_mode is 'mixed'
+      if (payment_mode === 'mixed' && (amount_paid === null || amount_paid > 0)) {
         const cashAmount = Number(this.markSoldForm.cash_amount || 0);
         const onlineAmount = Number(this.markSoldForm.online_amount || 0);
-        if (cashAmount + onlineAmount !== Number(amount_paid)) {
+        if (amount_paid && cashAmount + onlineAmount !== Number(amount_paid)) {
           this.markSoldError = 'Cash + Online amount must equal total amount received';
           this.markSoldLoading = false;
           return;
@@ -333,15 +326,15 @@ window.inventory = function(){
         // Import sales service
         const { createSale, markBikeSold } = await import('./salesService.js');
 
-        // Record the sale
+        // Record the sale (payment details are optional)
         const saleData = {
           bike_id: this.markSoldBike.id,
           sell_price: Number(sell_price),
           total_cost: this.markSoldBike.total_cost,
           sell_date: sale_date,
           channel: channel,
-          payment_mode: payment_mode,
-          amount_paid: Number(amount_paid),
+          payment_mode: payment_mode || 'cash',
+          amount_paid: amount_paid !== null && amount_paid !== '' ? Number(amount_paid) : 0,
           notes: (this.markSoldForm.notes || '') + (this.markSoldForm.profit ? ` [Profit Adj: ${this.markSoldForm.profit}]` : '')
         };
 
@@ -360,8 +353,9 @@ window.inventory = function(){
           return;
         }
 
-        // Create receivable if payment is pending
-        if (Number(amount_paid) < Number(sell_price)) {
+        // Create receivable if payment is pending (amount_paid < sell_price)
+        const amountPaid = amount_paid !== null && amount_paid !== '' ? Number(amount_paid) : 0;
+        if (amountPaid < Number(sell_price)) {
           const { createReceivableFromSale } = await import('./salesService.js');
           
           // Create or use existing customer party
@@ -388,7 +382,7 @@ window.inventory = function(){
               bike_id: this.markSoldBike.id,
               party_id: partyId,
               total_amount: Number(sell_price),
-              amount_paid: Number(amount_paid),
+              amount_paid: amountPaid,
               notes: `Sale recorded from bike #${this.markSoldBike.id}`
             });
           }

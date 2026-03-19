@@ -183,3 +183,9 @@ ALTER TABLE parties DISABLE ROW LEVEL SECURITY;
 
 -- Disable RLS on party_transaction_ledger table
 ALTER TABLE party_transaction_ledger DISABLE ROW LEVEL SECURITY;
+
+----
+ALTER TABLE sales DISABLE ROW LEVEL SECURITY;
+
+ALTER TABLE party_transaction_ledger DISABLE ROW LEVEL SECURITY;
+ALTER TABLE parties DISABLE ROW LEVEL SECURITY;
