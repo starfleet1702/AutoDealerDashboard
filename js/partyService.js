@@ -95,8 +95,8 @@ export async function createParty(partyData) {
 
   const { name, party_type, phone = null, email = null, address = null, notes = null } = partyData;
 
-  if (!name || !party_type) {
-    console.error('Party name and type are required');
+  if (!name) {
+    console.error('Party name is required');
     return null;
   }
 
@@ -105,7 +105,7 @@ export async function createParty(partyData) {
     .insert([
       {
         name: name.trim(),
-        party_type,
+        party_type: party_type !== undefined ? party_type : null,
         phone: phone || null,
         email: email || null,
         address: address || null,

@@ -34,3 +34,8 @@ todo
     - DONE - Creates sales record
     - DONE - Updates bike status to 'sold'
     - DONE - Creates receivable entry if payment pending 
+
+
+1. loaders for quick stats numbers
+2. Receivables on left nav in dashboard doesn't work when clicking on it
+3. 

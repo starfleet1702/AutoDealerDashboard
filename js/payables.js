@@ -27,7 +27,7 @@ async function initPartySearch() {
   // Load all parties on first focus
   searchInput.addEventListener('focus', async () => {
     if (allParties.length === 0) {
-      allParties = await fetchAllParties('vendor');
+      allParties = await fetchAllParties();
     }
     renderPartyList(allParties);
     dropdown.classList.remove('hidden');
@@ -38,13 +38,13 @@ async function initPartySearch() {
     const searchTerm = e.target.value.trim();
 
     if (searchTerm.length === 0) {
-      // Show all vendors
-      allParties = await fetchAllParties('vendor');
+      // Show all parties
+      allParties = await fetchAllParties();
       renderPartyList(allParties);
       createOption.classList.add('hidden');
     } else {
       // Search parties
-      const results = await searchParties(searchTerm, 'vendor');
+      const results = await searchParties(searchTerm);
       renderPartyList(results);
 
       // Show create option if no exact match
@@ -65,7 +65,7 @@ async function initPartySearch() {
     const newName = qs('#party-search').value.trim();
     const newParty = await createParty({
       name: newName,
-      party_type: 'vendor'
+      party_type: null
     });
     
     if (newParty) {
@@ -90,7 +90,7 @@ function renderPartyList(parties) {
   partyList.innerHTML = '';
 
   if (parties.length === 0) {
-    partyList.innerHTML = '<div class="p-2 text-slate-500 text-sm">No vendors found</div>';
+    partyList.innerHTML = '<div class="p-2 text-slate-500 text-sm">No parties found</div>';
     return;
   }
 
@@ -339,13 +339,10 @@ async function onSubmit(ev){
 
   // Get or create party if not selected via dropdown
   if (!partyId) {
-    const newParty = await createParty({
-      name: partySearch,
-      party_type: 'vendor'
-    });
+    const newParty = await createParty({ name: partySearch, party_type: null });
     
     if (!newParty) {
-      status.textContent = 'Failed to create vendor';
+      status.textContent = 'Failed to create party';
       status.className = 'text-sm text-red-600';
       return;
     }

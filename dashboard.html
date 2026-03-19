@@ -27,6 +27,18 @@
         }
       }
       
+      /* Skeleton loader utility */
+      .skeleton {
+        background: linear-gradient(90deg, #f3f4f6 25%, #e5e7eb 37%, #f3f4f6 63%);
+        background-size: 1000px 100%;
+        animation: shimmer 1.2s linear infinite;
+        border-radius: 6px;
+        display: inline-block;
+      }
+      .skeleton.sm { height: 0.75rem; width: 3.5rem; }
+      .skeleton.md { height: 1rem; width: 5rem; }
+      .skeleton.lg { height: 1.25rem; width: 6.5rem; }
+      
       .dashboard-gradient {
         background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
         position: relative;
@@ -510,19 +522,39 @@
             <ul class="space-y-4 text-slate-600">
               <li class="flex items-center justify-between p-3 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg">
                 <span class="text-sm font-medium text-slate-700">Bikes in stock</span>
-                <strong class="text-lg font-bold text-indigo-700" x-text="bikesInStock"></strong>
+                <template x-if="cardsLoading">
+                  <div class="skeleton md"></div>
+                </template>
+                <template x-if="!cardsLoading">
+                  <strong class="text-lg font-bold text-indigo-700" x-text="bikesInStock"></strong>
+                </template>
               </li>
               <li class="flex items-center justify-between p-3 bg-gradient-to-r from-emerald-50 to-green-50 rounded-lg">
                 <span class="text-sm font-medium text-slate-700">Sold this month</span>
-                <strong class="text-lg font-bold text-emerald-700" x-text="bikesSoldThisMonth"></strong>
+                <template x-if="cardsLoading">
+                  <div class="skeleton md"></div>
+                </template>
+                <template x-if="!cardsLoading">
+                  <strong class="text-lg font-bold text-emerald-700" x-text="bikesSoldThisMonth"></strong>
+                </template>
               </li>
               <li class="flex items-center justify-between p-3 bg-gradient-to-r from-purple-50 to-indigo-50 rounded-lg">
                 <span class="text-sm font-medium text-slate-700">Monthly profit</span>
-                <strong class="text-lg font-bold text-purple-700" x-text="formatCurrency(monthlyProfit)"></strong>
+                <template x-if="cardsLoading">
+                  <div class="skeleton lg"></div>
+                </template>
+                <template x-if="!cardsLoading">
+                  <strong class="text-lg font-bold text-purple-700" x-text="formatCurrency(monthlyProfit)"></strong>
+                </template>
               </li>
               <li class="flex items-center justify-between p-3 bg-gradient-to-r from-amber-50 to-orange-50 rounded-lg">
                 <span class="text-sm font-medium text-slate-700">Avg profit / bike</span>
-                <strong class="text-lg font-bold text-amber-700" x-text="formatCurrency(avgProfitPerBike)"></strong>
+                <template x-if="cardsLoading">
+                  <div class="skeleton md"></div>
+                </template>
+                <template x-if="!cardsLoading">
+                  <strong class="text-lg font-bold text-amber-700" x-text="formatCurrency(avgProfitPerBike)"></strong>
+                </template>
               </li>
             </ul>
           </div>
