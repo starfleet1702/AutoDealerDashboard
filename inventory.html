@@ -227,7 +227,7 @@
             </div>
             <form @submit.prevent="onSubmit()" class="space-y-4">
               <div>
-                <label class="block text-sm font-medium text-slate-600">Model</label>
+                <label class="block text-sm font-medium text-slate-600">Name</label>
                 <input x-model="form.model" type="text" required class="mt-1 input" list="model-history" />
                 <datalist id="model-history">
                   <template x-for="m in modelHistory" :key="m">
