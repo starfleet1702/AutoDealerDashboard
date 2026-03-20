@@ -217,6 +217,11 @@ async function loadReceivables(){
   const tbody = qs('#receivables-tbody');
   const loading = qs('#receivables-loading');
   const tableContainer = qs('#receivables-table-container');
+  const totalSkeleton = qs('#total-receivables-skeleton');
+  const totalValueEl = qs('#total-receivables-value');
+  // show skeleton while total is loading
+  if (totalSkeleton) totalSkeleton.classList.remove('hidden');
+  if (totalValueEl) totalValueEl.classList.add('hidden');
   
   // Show loading spinner, hide table
   loading.classList.remove('hidden');
@@ -227,6 +232,9 @@ async function loadReceivables(){
     tbody.innerHTML = '<tr><td colspan="7" class="py-6 text-center text-red-500">Supabase not configured</td></tr>';
     loading.classList.add('hidden');
     tableContainer.classList.remove('hidden');
+    // indicate total unavailable
+    if (totalValueEl) { totalValueEl.textContent = '-'; totalValueEl.classList.remove('hidden'); }
+    if (totalSkeleton) totalSkeleton.classList.add('hidden');
     return;
   }
 
@@ -248,6 +256,8 @@ async function loadReceivables(){
     tbody.innerHTML = `<tr><td colspan="7" class="py-6 text-center text-red-500">Error loading: ${error.message}</td></tr>`;
     loading.classList.add('hidden');
     tableContainer.classList.remove('hidden');
+    if (totalValueEl) { totalValueEl.textContent = '-'; totalValueEl.classList.remove('hidden'); }
+    if (totalSkeleton) totalSkeleton.classList.add('hidden');
     return;
   }
   
@@ -316,10 +326,13 @@ async function loadReceivables(){
 }
 
 function updateTotalReceivables(total) {
-  const totalEl = qs('#total-receivables');
-  if (totalEl) {
-    totalEl.textContent = formatCurrency(total);
+  const skeleton = qs('#total-receivables-skeleton');
+  const valueEl = qs('#total-receivables-value');
+  if (valueEl) {
+    valueEl.textContent = formatCurrency(total);
+    valueEl.classList.remove('hidden');
   }
+  if (skeleton) skeleton.classList.add('hidden');
 }
 
 async function onEdit(ev){

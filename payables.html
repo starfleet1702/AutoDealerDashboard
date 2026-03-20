@@ -126,7 +126,10 @@
             <div class="flex items-center justify-between">
               <div>
                 <div class="text-sm text-red-700 font-medium">Total Pending Payables</div>
-                <div class="text-2xl font-bold text-red-800" id="total-payables">₹0</div>
+                <div class="text-2xl font-bold text-red-800">
+                  <span id="total-payables-skeleton" class="inline-block h-8 w-28 bg-red-200 rounded animate-pulse"></span>
+                  <span id="total-payables-value" class="hidden">₹0</span>
+                </div>
               </div>
               <div class="text-red-600">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12" fill="none" viewBox="0 0 24 24" stroke="currentColor">
