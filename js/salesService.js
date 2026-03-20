@@ -192,3 +192,160 @@ export async function getBikeTotalCost(bikeId) {
     return 0;
   }
 }
+
+/**
+ * Get sales for a specific month with bike details
+ * @param {number} year - Year (e.g., 2026)
+ * @param {number} month - Month (1-12)
+ * @returns {Promise<Array>} List of sales for that month
+ */
+export async function getSalesByMonth(year, month) {
+  const supabase = await getSupabaseClient();
+  
+  if (!supabase) {
+    console.error('Supabase not configured');
+    return [];
+  }
+
+  try {
+    // Format dates for the month
+    const startDate = `${year}-${String(month).padStart(2, '0')}-01`;
+    const nextMonth = month === 12 ? 1 : month + 1;
+    const nextYear = month === 12 ? year + 1 : year;
+    const endDate = `${nextYear}-${String(nextMonth).padStart(2, '0')}-01`;
+
+    const { data, error } = await supabase
+      .from('sales')
+      .select(`
+        id,
+        bike_id,
+        sell_price,
+        total_cost,
+        profit,
+        sell_date,
+        payment_type,
+        payment_mode,
+        amount_paid,
+        channel,
+        notes,
+        bikes(id, model, year, color)
+      `)
+      .gte('sell_date', startDate)
+      .lt('sell_date', endDate)
+      .order('sell_date', { ascending: false });
+
+    if (error) {
+      console.error('Error fetching sales:', error.message);
+      return [];
+    }
+
+    return data || [];
+  } catch (err) {
+    console.error('Exception in getSalesByMonth:', err);
+    return [];
+  }
+}
+
+/**
+ * Get sales statistics for a specific month
+ * @param {number} year - Year (e.g., 2026)
+ * @param {number} month - Month (1-12)
+ * @returns {Promise<Object>} Statistics for that month
+ */
+export async function getSalesStatsByMonth(year, month) {
+  const supabase = await getSupabaseClient();
+  
+  if (!supabase) {
+    console.error('Supabase not configured');
+    return {
+      totalSales: 0,
+      totalCost: 0,
+      totalProfit: 0,
+      unitsSold: 0,
+      avgSalePrice: 0,
+      avgProfit: 0,
+      paymentModes: {},
+      channels: {}
+    };
+  }
+
+  try {
+    const startDate = `${year}-${String(month).padStart(2, '0')}-01`;
+    const nextMonth = month === 12 ? 1 : month + 1;
+    const nextYear = month === 12 ? year + 1 : year;
+    const endDate = `${nextYear}-${String(nextMonth).padStart(2, '0')}-01`;
+
+    const { data, error } = await supabase
+      .from('sales')
+      .select('sell_price, total_cost, profit, payment_mode, channel, amount_paid')
+      .gte('sell_date', startDate)
+      .lt('sell_date', endDate);
+
+    if (error) {
+      console.error('Error fetching sales stats:', error.message);
+      return {
+        totalSales: 0,
+        totalCost: 0,
+        totalProfit: 0,
+        unitsSold: 0,
+        avgSalePrice: 0,
+        avgProfit: 0,
+        paymentModes: {},
+        channels: {}
+      };
+    }
+
+    if (!data || data.length === 0) {
+      return {
+        totalSales: 0,
+        totalCost: 0,
+        totalProfit: 0,
+        unitsSold: 0,
+        avgSalePrice: 0,
+        avgProfit: 0,
+        paymentModes: {},
+        channels: {}
+      };
+    }
+
+    const stats = {
+      totalSales: 0,
+      totalCost: 0,
+      totalProfit: 0,
+      unitsSold: data.length,
+      paymentModes: {},
+      channels: {}
+    };
+
+    for (const sale of data) {
+      stats.totalSales += Number(sale.sell_price || 0);
+      stats.totalCost += Number(sale.total_cost || 0);
+      stats.totalProfit += Number(sale.profit || 0);
+
+      // Count payment modes
+      const mode = sale.payment_mode || 'unknown';
+      stats.paymentModes[mode] = (stats.paymentModes[mode] || 0) + 1;
+
+      // Count channels
+      const channel = sale.channel || 'Direct';
+      stats.channels[channel] = (stats.channels[channel] || 0) + 1;
+    }
+
+    stats.avgSalePrice = stats.unitsSold > 0 ? stats.totalSales / stats.unitsSold : 0;
+    stats.avgProfit = stats.unitsSold > 0 ? stats.totalProfit / stats.unitsSold : 0;
+
+    return stats;
+  } catch (err) {
+    console.error('Exception in getSalesStatsByMonth:', err);
+    return {
+      totalSales: 0,
+      totalCost: 0,
+      totalProfit: 0,
+      unitsSold: 0,
+      avgSalePrice: 0,
+      avgProfit: 0,
+      paymentModes: {},
+      channels: {}
+    };
+  }
+}
