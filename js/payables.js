@@ -31,10 +31,24 @@ function hidePaymentLoader(){
   if(cancelBtn) cancelBtn.disabled = false;
 }
 
+function showSuccessFeedback(message = 'Success!', duration = 2000){
+  const overlay = qs('#success-feedback-overlay');
+  const messageEl = qs('#success-message');
+  if(overlay && messageEl){
+    messageEl.textContent = message;
+    overlay.classList.remove('hidden');
+    setTimeout(() => {
+      overlay.classList.add('hidden');
+    }, duration);
+  }
+}
+
 let currentFilter = 'pending'; // 'pending' or 'all'
 let editingId = null;
 let selectedPartyId = null;
 let allParties = [];
+let currentLedgerPartyId = null;
+let currentLedgerPartyName = null;
 
 /**
  * Initialize party dropdown search
@@ -557,6 +571,57 @@ function onCancel() {
 }
 
 /**
+ * Open payment modal for a payable-like data object
+ */
+function openPaymentModalFor({ id, party_id, party_name, total_amount = 0, amount_paid = 0 }){
+  const total = Number(total_amount || 0);
+  const paid = Number(amount_paid || 0);
+  const pending = total - paid;
+
+  qs('#payment-payable-id').value = id || '';
+  qs('#payment-party-name').textContent = party_name || currentLedgerPartyName || '-';
+  // support both input id variants if present
+  const totalEl = qs('#payment-total') || qs('#payment-total-input');
+  const pendingEl = qs('#payment-pending') || qs('#payment-pending-input');
+  if (totalEl) totalEl.textContent !== undefined ? totalEl.textContent = formatCurrency(total) : (totalEl.value = formatCurrency(total));
+  if (pendingEl) pendingEl.textContent !== undefined ? pendingEl.textContent = formatCurrency(pending) : (pendingEl.value = formatCurrency(pending));
+  qs('#payment-already-paid').textContent = formatCurrency(paid);
+  qs('#payment-amount').value = pending > 0 ? pending : '';
+  qs('#payment-amount-error').textContent = '';
+  qs('#payment-form-status').textContent = '';
+  qs('#payment-notes').value = '';
+  qs('#transaction-direction').value = 'credit';
+
+  // Ensure ledger modal is hidden so payment modal stays on top
+  const ledgerModal = qs('#ledger-modal');
+  if (ledgerModal) ledgerModal.classList.add('hidden');
+  qs('#payment-modal').classList.remove('hidden');
+}
+
+/**
+ * Find the next pending payable for a party and open payment modal for it
+ */
+async function openPaymentForParty(partyId){
+  if (!partyId) return alert('Party not found');
+  const supabase = await getSupabaseClient();
+  const { data, error } = await supabase
+    .from('payables')
+    .select('*')
+    .eq('party_id', partyId)
+    .eq('status', 'pending')
+    .order('due_date', { ascending: true, nullsFirst: false })
+    .limit(1);
+
+  if (error) return alert('Failed to fetch payables: ' + error.message);
+  if (!data || data.length === 0) return alert('No pending payables found for this party');
+
+  const payable = data[0];
+  const ledgerModal = qs('#ledger-modal');
+  if (ledgerModal) ledgerModal.classList.add('hidden');
+  openPaymentModalFor({ id: payable.id, party_id: payable.party_id, party_name: currentLedgerPartyName || payable.vendor_name || '-', total_amount: payable.total_amount, amount_paid: payable.amount_paid });
+}
+
+/**
  * Open payment modal for a payable
  */
 function onOpenPaymentModal(ev) {
@@ -572,7 +637,7 @@ function onOpenPaymentModal(ev) {
   qs('#payment-total').textContent = formatCurrency(total);
   qs('#payment-already-paid').textContent = formatCurrency(paid);
   qs('#payment-pending').textContent = formatCurrency(pending);
-  qs('#payment-amount').value = pending; // Default to full pending
+  qs('#payment-amount').value = ''; // Leave amount blank for user entry
   qs('#payment-amount-error').textContent = '';
   qs('#payment-form-status').textContent = '';
   qs('#payment-notes').value = '';
@@ -594,6 +659,14 @@ async function onViewPartyLedger(ev) {
   const tbody = qs('#ledger-tbody');
   
   qs('#ledger-modal-title').textContent = `Transaction History — ${partyName}`;
+  // store current ledger party for quick actions
+  currentLedgerPartyId = partyId;
+  currentLedgerPartyName = partyName;
+  const ledgerModal = qs('#ledger-modal');
+  if (ledgerModal) {
+    ledgerModal.dataset.partyId = partyId;
+    ledgerModal.dataset.partyName = partyName;
+  }
   tbody.innerHTML = '<tr><td colspan="5" class="py-4 text-center text-slate-500">Loading...</td></tr>';
   
   modal.classList.remove('hidden');
@@ -642,7 +715,8 @@ async function onPaymentSubmit(ev) {
     return;
   }
 
-  const pending = Number(qs('#payment-pending').textContent.replace(/[^\d.]/g, ''));
+  const pendingElement = qs('#payment-pending');
+  const pending = Number(pendingElement.textContent.replace(/[^\d.]/g, ''));
   
   // For credit (amount paid), limit to pending amount
   // For debit (amount taken), allow any amount
@@ -723,13 +797,12 @@ async function onPaymentSubmit(ev) {
     status.className = 'text-sm text-orange-600';
     hidePaymentLoader();
   } else {
-    status.textContent = 'Transaction recorded successfully!';
-    status.className = 'text-sm text-green-600';
     hidePaymentLoader();
+    showSuccessFeedback('Transaction Recorded!', 2000);
     setTimeout(() => {
       qs('#payment-modal').classList.add('hidden');
       loadPayables();
-    }, 1000);
+    }, 2200);
   }
 }
 
@@ -754,6 +827,15 @@ function init(){
   qs('#close-ledger-modal').addEventListener('click', () => {
     qs('#ledger-modal').classList.add('hidden');
   });
+
+  // Quick action buttons inside ledger modal
+  const openPayBtn = qs('#open-pay-from-ledger');
+  if (openPayBtn) openPayBtn.addEventListener('click', () => {
+    const partyId = currentLedgerPartyId || Number(qs('#ledger-modal').dataset.partyId);
+    openPaymentForParty(partyId);
+  });
+
+  // 'Add/Edit' button removed from ledger modal — no handler needed
 
   // Initialize party search dropdown
   initPartySearch();

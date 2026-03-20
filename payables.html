@@ -316,7 +316,10 @@
       <div class="bg-white rounded-lg p-6 max-w-2xl w-full mx-4 max-h-96 overflow-y-auto">
         <div class="flex items-center justify-between mb-4">
           <h3 class="font-bold text-lg" id="ledger-modal-title">Transaction History</h3>
-          <button id="close-ledger-modal" class="text-2xl text-slate-400 hover:text-slate-600">&times;</button>
+          <div class="flex items-center gap-2">
+            <button id="open-pay-from-ledger" class="px-3 py-1 text-sm bg-green-600 text-white rounded hover:bg-green-700">Pay</button>
+            <button id="close-ledger-modal" class="text-2xl text-slate-400 hover:text-slate-600">&times;</button>
+          </div>
         </div>
         <table id="ledger-table" class="w-full text-left text-sm">
           <thead class="text-slate-600 border-b">
@@ -332,6 +335,18 @@
             <tr><td colspan="5" class="py-4 text-center text-slate-500">Loading...</td></tr>
           </tbody>
         </table>
+      </div>
+    </div>
+
+    <!-- Generic Success Feedback Overlay -->
+    <div id="success-feedback-overlay" class="hidden fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50">
+      <div class="flex flex-col items-center gap-4 p-8 bg-white rounded-2xl shadow-2xl">
+        <div class="w-20 h-20 rounded-full bg-green-100 flex items-center justify-center">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+          </svg>
+        </div>
+        <div class="text-lg font-semibold text-slate-800" id="success-message">Success!</div>
       </div>
     </div>
 
