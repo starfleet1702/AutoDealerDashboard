@@ -9,6 +9,28 @@ function formatCurrency(n){
   try{ return '₹' + Number(n).toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2}); }catch(e){ return n; }
 }
 
+function showPaymentLoader(){
+  const overlay = qs('#payment-modal-overlay');
+  const submitBtn = qs('#payment-submit-btn');
+  const closeBtn = qs('#close-payment-modal');
+  const cancelBtn = qs('#cancel-payment-btn');
+  if(overlay) overlay.classList.remove('hidden');
+  if(submitBtn){ submitBtn.disabled = true; submitBtn.classList.add('opacity-60','cursor-not-allowed'); }
+  if(closeBtn) closeBtn.disabled = true;
+  if(cancelBtn) cancelBtn.disabled = true;
+}
+
+function hidePaymentLoader(){
+  const overlay = qs('#payment-modal-overlay');
+  const submitBtn = qs('#payment-submit-btn');
+  const closeBtn = qs('#close-payment-modal');
+  const cancelBtn = qs('#cancel-payment-btn');
+  if(overlay) overlay.classList.add('hidden');
+  if(submitBtn){ submitBtn.disabled = false; submitBtn.classList.remove('opacity-60','cursor-not-allowed'); }
+  if(closeBtn) closeBtn.disabled = false;
+  if(cancelBtn) cancelBtn.disabled = false;
+}
+
 let currentFilter = 'pending'; // 'pending' or 'all'
 let editingId = null;
 let selectedPartyId = null;
@@ -278,9 +300,9 @@ async function loadPayables(){
         ${p.bike_id ? `<div class="text-xs text-slate-500">Bike #${p.bike_id}</div>` : ''}
         ${p.notes ? `<div class="text-xs text-slate-500">${p.notes.length > 40 ? p.notes.slice(0,40)+'...' : p.notes}</div>` : ''}
       </td>
+      <td class="py-2 pr-4 font-semibold ${statusColor}">${formatCurrency(p.pending_amount)}</td>
       <td class="py-2 pr-4">${formatCurrency(p.total_amount)}</td>
       <td class="py-2 pr-4">${formatCurrency(p.amount_paid)}</td>
-      <td class="py-2 pr-4 font-semibold ${statusColor}">${formatCurrency(p.pending_amount)}</td>
       <td class="py-2 pr-4">${dueDate}${isOverdue ? ' <span class="text-xs text-red-600 font-semibold">(OVERDUE)</span>' : ''}</td>
       <td class="py-2 pr-4">
         <span class="inline-block px-2 py-1 rounded text-xs ${p.status === 'cleared' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}">
@@ -401,7 +423,7 @@ async function onSubmit(ev){
 
   // Validate party
   if(!partySearch){
-    status.textContent = 'Vendor/Dealer is required';
+    status.textContent = 'Party is required';
     status.className = 'text-sm text-red-600';
     return;
   }
@@ -632,6 +654,9 @@ async function onPaymentSubmit(ev) {
   status.textContent = 'Recording transaction...';
   status.className = 'text-sm text-slate-600';
 
+  // show loader and prevent double clicks
+  showPaymentLoader();
+
   const supabase = await getSupabaseClient();
 
   // Fetch current payable to get party_id
@@ -644,6 +669,7 @@ async function onPaymentSubmit(ev) {
   if (fetchError || !payableData) {
     status.textContent = 'Failed to load payable record';
     status.className = 'text-sm text-red-600';
+    hidePaymentLoader();
     return;
   }
 
@@ -675,6 +701,7 @@ async function onPaymentSubmit(ev) {
   if (updateError) {
     status.textContent = 'Failed to update payable: ' + updateError.message;
     status.className = 'text-sm text-red-600';
+    hidePaymentLoader();
     return;
   }
 
@@ -694,10 +721,11 @@ async function onPaymentSubmit(ev) {
   if (!txnResult) {
     status.textContent = 'Transaction recorded but failed to log ledger entry';
     status.className = 'text-sm text-orange-600';
+    hidePaymentLoader();
   } else {
     status.textContent = 'Transaction recorded successfully!';
     status.className = 'text-sm text-green-600';
-    
+    hidePaymentLoader();
     setTimeout(() => {
       qs('#payment-modal').classList.add('hidden');
       loadPayables();
