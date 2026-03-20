@@ -43,9 +43,9 @@ todo
 12. DONE - Channel pie chart breakdown
 13. DONE _ graph 3M -> 6M  -> 12 M Not working
 14. DONE - Add bike cost not working while editing bike
-15. Make Look and feel of whole website same
-16. WIP - RTO documentation charges - 
-17. Update RLS everywhere
+16. DONE - RTO documentation charges - 
 18. DONE - dummy payable add 50k , insallement payments 
 19. DONE - remove nk - dummy - 50k
 20. DONE - Delete vehicle - delete dummy
+21. Update RLS everywhere
+22. Make Look and feel of whole website same
