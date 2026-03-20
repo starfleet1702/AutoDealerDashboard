@@ -129,11 +129,18 @@ window.inventory = function(){
       amount_paid: null,
       cash_amount: null,
       online_amount: null,
-      notes: ''
+      notes: '',
+      // optional cost fields to add documentation charges during sale
+      add_cost: false,
+      cost_category: 'rto_documents',
+      cost_amount: null,
+      cost_date: new Date().toISOString().slice(0,10),
+      cost_notes: ''
     },
     markSoldLoading: false,
     markSoldError: '',
     markSoldSuccess: '',
+    markSoldCosts: [],
     deleteLoading: false,
     modelHistory: JSON.parse(localStorage.getItem('modelHistory')||'[]'),
     colorHistory: JSON.parse(localStorage.getItem('colorHistory')||'[]'),
@@ -515,10 +522,34 @@ window.inventory = function(){
         amount_paid: null,
         cash_amount: null,
         online_amount: null,
-        notes: ''
+        notes: '',
+        add_cost: false,
+        cost_category: 'rto_documents',
+        cost_amount: null,
+        cost_date: new Date().toISOString().slice(0,10),
+        cost_notes: ''
       };
       this.markSoldError = '';
       this.markSoldSuccess = '';
+      // Load existing costs for this bike to show in the modal
+      this.markSoldCosts = [];
+      try {
+        const supabase = await getSupabaseClient();
+        if (supabase) {
+          const { data: costData, error: costErr } = await supabase
+            .from('bike_costs')
+            .select('id,category,amount,date,notes')
+            .eq('bike_id', bike.id)
+            .order('date', { ascending: false });
+          if (costErr) {
+            console.warn('Failed to load costs for mark sold modal:', costErr);
+          } else {
+            this.markSoldCosts = (costData || []).map(c => ({ id: c.id, category: c.category, amount: c.amount, date: c.date, notes: c.notes || '' }));
+          }
+        }
+      } catch (e) {
+        console.warn('Error loading mark-sold costs:', e);
+      }
       this.showMarkSoldModal = true;
     },
     resetMarkSoldForm() {
@@ -534,7 +565,12 @@ window.inventory = function(){
         amount_paid: null,
         cash_amount: null,
         online_amount: null,
-        notes: ''
+        notes: '',
+        add_cost: false,
+        cost_category: 'rto_documents',
+        cost_amount: null,
+        cost_date: new Date().toISOString().slice(0,10),
+        cost_notes: ''
       };
       this.markSoldError = '';
       this.markSoldSuccess = '';
@@ -627,6 +663,28 @@ window.inventory = function(){
           amount_paid: amountPaid,
           notes: (this.markSoldForm.notes || '') + (this.markSoldForm.profit ? ` [Profit Adj: ${this.markSoldForm.profit}]` : '')
         };
+
+        // If user requested to add a cost as part of marking sold, insert it first
+        if (this.markSoldForm.add_cost && this.markSoldForm.cost_amount && Number(this.markSoldForm.cost_amount) > 0) {
+          const costPayload = {
+            bike_id: this.markSoldBike.id,
+            category: this.markSoldForm.cost_category || 'rto_documents',
+            amount: Number(this.markSoldForm.cost_amount) || 0,
+            notes: this.markSoldForm.cost_notes || null,
+            date: this.markSoldForm.cost_date || sale_date
+          };
+          const { data: insertedCost, error: insertCostErr } = await supabase.from('bike_costs').insert(costPayload).select().single();
+          if (insertCostErr) {
+            this.markSoldError = 'Failed to add cost: ' + (insertCostErr.message || 'Unknown error');
+            this.markSoldLoading = false;
+            return;
+          }
+
+          // Add the inserted cost amount to sale total_cost and local bike total
+          const added = Number(insertedCost.amount || 0);
+          saleData.total_cost = Number(saleData.total_cost || 0) + added;
+          this.markSoldBike.total_cost = Number(this.markSoldBike.total_cost || 0) + added;
+        }
 
         let saleResult = null;
 
