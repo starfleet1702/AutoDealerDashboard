@@ -160,23 +160,65 @@ export async function updateParty(partyId, partyData) {
 /**
  * Delete a party
  * @param {number} partyId - Party ID
- * @returns {boolean} True if deleted successfully
+ * @returns {Object} { success: boolean, message: string }
  */
 export async function deleteParty(partyId) {
   const supabase = await getSupabaseClient();
-  if (!supabase) return false;
+  if (!supabase) {
+    return { success: false, message: 'Supabase not configured' };
+  }
 
-  const { error } = await supabase
+  // Check for receivables and payables (blocking)
+  const { data: receivables, error: rcError } = await supabase
+    .from('receivables')
+    .select('id', { count: 'exact' })
+    .eq('party_id', partyId);
+
+  if (!rcError && receivables && receivables.length > 0) {
+    return { 
+      success: false, 
+      message: `Cannot delete: Party has ${receivables.length} receivable(s). Please delete receivables first.` 
+    };
+  }
+
+  const { data: payables, error: pbError } = await supabase
+    .from('payables')
+    .select('id', { count: 'exact' })
+    .eq('party_id', partyId);
+
+  if (!pbError && payables && payables.length > 0) {
+    return { 
+      success: false, 
+      message: `Cannot delete: Party has ${payables.length} payable(s). Please delete payables first.` 
+    };
+  }
+
+  // Delete all transactions for this party (these can be safely deleted)
+  const { error: deleteTxError } = await supabase
+    .from('party_transaction_ledger')
+    .delete()
+    .eq('party_id', partyId);
+
+  if (deleteTxError) {
+    console.error('Error deleting party transactions:', deleteTxError.message);
+    return { 
+      success: false, 
+      message: 'Failed to delete party transactions. Please try again.' 
+    };
+  }
+
+  // Now delete the party
+  const { error: deletePartyError } = await supabase
     .from('parties')
     .delete()
     .eq('id', partyId);
 
-  if (error) {
-    console.error('Error deleting party:', error.message);
-    return false;
+  if (deletePartyError) {
+    console.error('Error deleting party:', deletePartyError.message);
+    return { success: false, message: 'Failed to delete party' };
   }
 
-  return true;
+  return { success: true, message: 'Party deleted successfully' };
 }
 
 /**

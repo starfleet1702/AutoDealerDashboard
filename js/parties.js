@@ -194,10 +194,10 @@ async function onDelete(ev) {
 
   if (!confirm(`Delete party "${party.name}"? This cannot be undone.`)) return;
 
-  const success = await deleteParty(Number(id));
+  const result = await deleteParty(Number(id));
 
-  if (!success) {
-    alert('Failed to delete party');
+  if (!result.success) {
+    alert(result.message || 'Failed to delete party');
     return;
   }
 
