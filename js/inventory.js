@@ -139,6 +139,7 @@ window.inventory = function(){
     colorHistory: JSON.parse(localStorage.getItem('colorHistory')||'[]'),
     dealerHistory: JSON.parse(localStorage.getItem('dealerHistory')||'[]'),
     editingId: null,
+    originalBikeStatus: null,
     pageLoading: true,
     async load(){
       this.pageLoading = true;
@@ -266,6 +267,27 @@ window.inventory = function(){
         return;
       }
       if (this.editingId) {
+        const previousStatus = this.originalBikeStatus;
+        const nextStatus = bike.status;
+
+        // If sold bike is being moved back to any non-sold status, reverse linked sale/payment entries first
+        if (previousStatus === 'sold' && nextStatus !== 'sold') {
+          const shouldReverse = window.confirm(`This bike is currently sold. Do you want to reverse linked sales and payment ledger entries before moving it to ${nextStatus}?`);
+          if (!shouldReverse) {
+            this.loading = false;
+            return;
+          }
+
+          const reverseResult = await this.reverseSaleAndPaymentEntries(this.editingId);
+          if (!reverseResult.ok) {
+            this.error = reverseResult.error || 'Failed to reverse linked sale/payment entries';
+            this.loading = false;
+            return;
+          }
+
+          bike.sell_date = null;
+        }
+
         // update bike
         const supabase = await getSupabaseClient();
         if (!supabase) {
@@ -374,6 +396,7 @@ window.inventory = function(){
         
         this.success = 'Bike updated';
         this.editingId = null;
+        this.originalBikeStatus = null;
         this.showForm = false;
         this.resetForm();
         await this.load();
@@ -386,6 +409,7 @@ window.inventory = function(){
     },
     async editBike(bike){
       this.editingId = bike.id;
+      this.originalBikeStatus = bike.status;
       this.showForm = true;
       
       // Load existing costs from database
@@ -442,6 +466,41 @@ window.inventory = function(){
       });
     },
     resetForm(){ this.form = { model:'', year:'', color:'', buy_price:null, dealer:'', status:'in_stock', purchase_date:new Date().toISOString().slice(0,10), sell_date:'', notes:'', costs:[], registration_number:'' } },
+    async reverseSaleAndPaymentEntries(bikeId) {
+      try {
+        const supabase = await getSupabaseClient();
+        if (!supabase) return { ok: false, error: 'Supabase not configured' };
+
+        const { data: salesRows, error: salesErr } = await supabase
+          .from('sales')
+          .select('id')
+          .eq('bike_id', bikeId);
+
+        if (salesErr) return { ok: false, error: 'Failed to fetch sale records: ' + salesErr.message };
+
+        const saleIds = (salesRows || []).map(s => s.id);
+        if (saleIds.length === 0) return { ok: true };
+
+        const { error: ledgerErr } = await supabase
+          .from('cash_ledger')
+          .delete()
+          .eq('reference_type', 'sale')
+          .in('reference_id', saleIds);
+
+        if (ledgerErr) return { ok: false, error: 'Failed to delete payment ledger entries: ' + ledgerErr.message };
+
+        const { error: saleDeleteErr } = await supabase
+          .from('sales')
+          .delete()
+          .in('id', saleIds);
+
+        if (saleDeleteErr) return { ok: false, error: 'Failed to delete sales records: ' + saleDeleteErr.message };
+
+        return { ok: true };
+      } catch (err) {
+        return { ok: false, error: err.message || 'Failed to reverse sale/payment entries' };
+      }
+    },
     formatCurrency(v){ if (v === null || v === undefined) return '-'; return '₹' + Number(v).toLocaleString(); },
     async openMarkSoldModal(bike) {
       this.markSoldBike = bike;
@@ -551,7 +610,11 @@ window.inventory = function(){
         }
 
         // Import sales service
-        const { createSale, markBikeSold } = await import('./salesService.js');
+        const { createSale, markBikeSold, recordSalePaymentInCashLedger } = await import('./salesService.js');
+
+        const amountPaid = amount_paid !== null && amount_paid !== '' ? Number(amount_paid) : 0;
+        const cashAmount = this.markSoldForm.cash_amount !== null && this.markSoldForm.cash_amount !== '' ? Number(this.markSoldForm.cash_amount) : 0;
+        const onlineAmount = this.markSoldForm.online_amount !== null && this.markSoldForm.online_amount !== '' ? Number(this.markSoldForm.online_amount) : 0;
 
         // Record the sale (payment details are optional)
         const saleData = {
@@ -561,15 +624,75 @@ window.inventory = function(){
           sell_date: sale_date,
           channel: channel,
           payment_mode: payment_mode || 'cash',
-          amount_paid: amount_paid !== null && amount_paid !== '' ? Number(amount_paid) : 0,
+          amount_paid: amountPaid,
           notes: (this.markSoldForm.notes || '') + (this.markSoldForm.profit ? ` [Profit Adj: ${this.markSoldForm.profit}]` : '')
         };
 
-        const saleResult = await createSale(saleData);
-        if (!saleResult) {
-          this.markSoldError = 'Failed to create sale record';
+        let saleResult = null;
+
+        const { data: existingSales, error: existingSalesError } = await supabase
+          .from('sales')
+          .select('id')
+          .eq('bike_id', this.markSoldBike.id)
+          .order('id', { ascending: false })
+          .limit(1);
+
+        if (existingSalesError) {
+          this.markSoldError = 'Failed to check existing sale record';
           this.markSoldLoading = false;
           return;
+        }
+
+        const existingSale = (existingSales && existingSales.length > 0) ? existingSales[0] : null;
+
+        if (existingSale) {
+          const shouldUpdate = window.confirm('A sale entry already exists for this bike. Click OK to update it and replace linked cash ledger entries. Click Cancel to keep the current entry.');
+          if (!shouldUpdate) {
+            this.markSoldLoading = false;
+            return;
+          }
+
+          const { data: updatedSale, error: updateSaleError } = await supabase
+            .from('sales')
+            .update({
+              sell_price: saleData.sell_price,
+              total_cost: saleData.total_cost,
+              sell_date: saleData.sell_date,
+              channel: saleData.channel,
+              payment_mode: saleData.payment_mode,
+              amount_paid: saleData.amount_paid,
+              notes: saleData.notes
+            })
+            .eq('id', existingSale.id)
+            .select()
+            .single();
+
+          if (updateSaleError || !updatedSale) {
+            this.markSoldError = 'Failed to update existing sale record';
+            this.markSoldLoading = false;
+            return;
+          }
+
+          const { error: deleteLedgerError } = await supabase
+            .from('cash_ledger')
+            .delete()
+            .eq('reference_type', 'sale')
+            .eq('reference_id', existingSale.id);
+
+          if (deleteLedgerError) {
+            this.markSoldError = 'Failed to replace previous cash ledger entries';
+            this.markSoldLoading = false;
+            return;
+          }
+
+          saleResult = updatedSale;
+        } else {
+          saleResult = await createSale(saleData);
+          if (!saleResult) {
+            this.markSoldError = 'Failed to create sale record';
+            this.markSoldLoading = false;
+            return;
+          }
         }
 
         // Update bike status to sold
@@ -580,8 +703,23 @@ window.inventory = function(){
           return;
         }
 
+        // Auto record amount received in cash ledger
+        const ledgerResult = await recordSalePaymentInCashLedger({
+          saleId: saleResult.id,
+          bikeId: this.markSoldBike.id,
+          paymentMode: payment_mode || 'cash',
+          amountPaid,
+          cashAmount,
+          onlineAmount,
+          sellDate: sale_date,
+          notes: this.markSoldForm.notes || null
+        });
+
+        if (!ledgerResult.ok) {
+          console.warn('Sale saved but cash ledger update failed:', ledgerResult.error);
+        }
+
         // Create receivable if payment is pending (amount_paid < sell_price)
-        const amountPaid = amount_paid !== null && amount_paid !== '' ? Number(amount_paid) : 0;
         if (amountPaid < Number(sell_price)) {
           const { createReceivableFromSale } = await import('./salesService.js');
           

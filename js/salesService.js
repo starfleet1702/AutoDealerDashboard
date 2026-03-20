@@ -66,6 +66,118 @@ export async function createSale(saleData) {
 }
 
 /**
+ * Record received sale payment into cash ledger
+ * @param {Object} params - Sale payment details
+ * @returns {Promise<{ok:boolean, inserted:number, error:string|null}>}
+ */
+export async function recordSalePaymentInCashLedger({
+  saleId,
+  bikeId,
+  paymentMode,
+  amountPaid = 0,
+  cashAmount = 0,
+  onlineAmount = 0,
+  sellDate,
+  notes
+}) {
+  const supabase = await getSupabaseClient();
+
+  if (!supabase) {
+    return { ok: false, inserted: 0, error: 'Supabase not configured' };
+  }
+
+  const paid = Number(amountPaid || 0);
+  if (paid <= 0) {
+    return { ok: true, inserted: 0, error: null };
+  }
+
+  const mode = (paymentMode || 'cash').toLowerCase();
+  const dateTimestamp = (sellDate ? `${sellDate}T12:00:00` : new Date().toISOString());
+  const baseNotes = notes || `Sale receipt for bike #${bikeId}`;
+
+  const entries = [];
+
+  if (mode === 'cash') {
+    entries.push({
+      account: 'cash',
+      entry_type: 'credit',
+      amount: Number(paid.toFixed(2)),
+      date: dateTimestamp,
+      reference_type: 'sale',
+      reference_id: saleId,
+      notes: baseNotes
+    });
+  } else if (mode === 'online') {
+    entries.push({
+      account: 'bank',
+      entry_type: 'credit',
+      amount: Number(paid.toFixed(2)),
+      date: dateTimestamp,
+      reference_type: 'sale',
+      reference_id: saleId,
+      notes: baseNotes
+    });
+  } else if (mode === 'mixed') {
+    const cash = Number(cashAmount || 0);
+    const online = Number(onlineAmount || 0);
+
+    if (cash > 0) {
+      entries.push({
+        account: 'cash',
+        entry_type: 'credit',
+        amount: Number(cash.toFixed(2)),
+        date: dateTimestamp,
+        reference_type: 'sale',
+        reference_id: saleId,
+        notes: `${baseNotes} (mixed: cash)`
+      });
+    }
+
+    if (online > 0) {
+      entries.push({
+        account: 'bank',
+        entry_type: 'credit',
+        amount: Number(online.toFixed(2)),
+        date: dateTimestamp,
+        reference_type: 'sale',
+        reference_id: saleId,
+        notes: `${baseNotes} (mixed: online)`
+      });
+    }
+
+    if (entries.length === 0) {
+      entries.push({
+        account: 'cash',
+        entry_type: 'credit',
+        amount: Number(paid.toFixed(2)),
+        date: dateTimestamp,
+        reference_type: 'sale',
+        reference_id: saleId,
+        notes: `${baseNotes} (mixed fallback)`
+      });
+    }
+  } else {
+    entries.push({
+      account: 'cash',
+      entry_type: 'credit',
+      amount: Number(paid.toFixed(2)),
+      date: dateTimestamp,
+      reference_type: 'sale',
+      reference_id: saleId,
+      notes: `${baseNotes} (unknown mode fallback)`
+    });
+  }
+
+  const { error } = await supabase.from('cash_ledger').insert(entries);
+  if (error) {
+    console.error('Error creating cash_ledger entries for sale:', error.message);
+    return { ok: false, inserted: 0, error: error.message || 'Failed to insert cash ledger entries' };
+  }
+
+  return { ok: true, inserted: entries.length, error: null };
+}
+
+/**
  * Create a receivable from a sale with pending payment
  * @param {Object} params - Parameters
  * @returns {Promise<Object>} Created receivable record
