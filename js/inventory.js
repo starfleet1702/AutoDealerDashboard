@@ -76,6 +76,7 @@ window.inventory = function(){
     bikes: [],
     filteredBikes: [],
     searchQuery: '',
+    selectedStatus: 'in_stock',
     showForm: false,
     loading: false,
     error: '',
@@ -170,13 +171,22 @@ window.inventory = function(){
     },
     filterBikes(){
       const q = (this.searchQuery || '').trim().toLowerCase();
+      const status = this.selectedStatus;
       this.filteredBikes = this.bikes.filter(b => {
-        if (!q) return b.status === 'in_stock';
-        return (
+        // Filter by status (or show all if status is 'all')
+        const statusMatch = status === 'all' || b.status === status;
+        
+        // If no search query, only filter by status
+        if (!q) return statusMatch;
+        
+        // If there's a search query, must match both status and search terms
+        const searchMatch = (
           (b.model && b.model.toLowerCase().includes(q)) ||
           (b.registration_number && b.registration_number.toLowerCase().includes(q)) ||
           (b.status && b.status.toLowerCase().includes(q))
         );
+        
+        return statusMatch && searchMatch;
       });
     },
     toggleSearch(){

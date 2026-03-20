@@ -1,22 +1,18 @@
 todo
 
 1. DONE - 6g 2026 - editing year not working - RLS was issue - disabled RLS
-2. payables page - Testing pending
+2. DONE - payables page - Testing pending
 3. DONE - Save failed: new row violates row-level security policy for table "payables" - 
 
-4. Update RLS everywhere
-5. RTO - while marking sold
+5. RTO charges - while marking sold
     - name and phone number of customer
-    - 
-6. Dealer registrartion - WIP - As Party
+6. DONE - Dealer registrartion - WIP - As Party
 7. Paid to dealer installments - party_transactions
 8. Mark sold - workflow
     - selling price
     - Direct Profit in case of partial investment
     -  
-9. 30k to receivables
-10. Add cost not working - 100 rs grey bike
-11. 
+9. DONE - 30k to receivables : Gokul
 
 ------ Mark as sold flow ----
 
@@ -36,7 +32,11 @@ todo
     - DONE - Creates receivable entry if payment pending 
 
 
-1. loaders for quick stats numbers
-2. Receivables on left nav in dashboard doesn't work when clicking on it
+1. DONE - loaders for quick stats numbers
+2. DONE - Receivables on left nav in dashboard doesn't work when clicking on it
 3. option to see sold bikes
 4. create new party not working
+5. Make Look and feel of whole website same
+6. Add cost not working - 100 rs grey bike
+7. Update RLS everywhere
+8. Filter for in stock, sold on inventory list page
