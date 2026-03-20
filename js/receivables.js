@@ -303,9 +303,9 @@ async function loadReceivables(){
         ${r.bike_id ? `<div class="text-xs text-slate-500">Bike #${r.bike_id}</div>` : ''}
         ${r.notes ? `<div class="text-xs text-slate-500">${r.notes.length > 40 ? r.notes.slice(0,40)+'...' : r.notes}</div>` : ''}
       </td>
+      <td class="py-2 pr-4 font-semibold">${formatCurrency(r.pending_amount)}</td>
       <td class="py-2 pr-4">${formatCurrency(r.total_amount)}</td>
       <td class="py-2 pr-4">${formatCurrency(r.amount_paid)}</td>
-      <td class="py-2 pr-4 font-semibold ${statusColor}">${formatCurrency(r.pending_amount)}</td>
       <td class="py-2 pr-4">${dueDate}${isOverdue ? ' <span class="text-xs text-red-600 font-semibold">(OVERDUE)</span>' : ''}</td>
       <td class="py-2 pr-4">
         <span class="inline-block px-2 py-1 rounded text-xs ${r.status === 'cleared' ? 'bg-green-100 text-green-700' : 'bg-blue-100 text-blue-700'}">
