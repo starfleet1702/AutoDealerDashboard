@@ -38,4 +38,5 @@ todo
 
 1. loaders for quick stats numbers
 2. Receivables on left nav in dashboard doesn't work when clicking on it
-3. 
+3. option to see sold bikes
+4. create new party not working
