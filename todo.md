@@ -46,3 +46,4 @@ todo
 15. Make Look and feel of whole website same
 16. RTO documentation charges - 
 17. Update RLS everywhere
+18. Testing - dummy payable add 50k , insallement payments 

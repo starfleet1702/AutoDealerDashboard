@@ -487,6 +487,53 @@
             </template>
           </div>
 
+          <div class="mt-5 md:mt-6 p-5 md:p-6 rounded-xl bg-white shadow-card border border-slate-100 lg:hidden">
+            <div class="flex items-center gap-2 mb-4">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-indigo-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
+              </svg>
+              <h4 class="font-semibold text-slate-800">Quick Stats</h4>
+            </div>
+            <ul class="space-y-4 text-slate-600">
+              <li class="flex items-center justify-between p-3 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg">
+                <span class="text-sm font-medium text-slate-700">Bikes in stock</span>
+                <template x-if="cardsLoading">
+                  <div class="skeleton md"></div>
+                </template>
+                <template x-if="!cardsLoading">
+                  <strong class="text-lg font-bold text-indigo-700" x-text="bikesInStock"></strong>
+                </template>
+              </li>
+              <li class="flex items-center justify-between p-3 bg-gradient-to-r from-emerald-50 to-green-50 rounded-lg">
+                <span class="text-sm font-medium text-slate-700">Sold this month</span>
+                <template x-if="cardsLoading">
+                  <div class="skeleton md"></div>
+                </template>
+                <template x-if="!cardsLoading">
+                  <strong class="text-lg font-bold text-emerald-700" x-text="bikesSoldThisMonth"></strong>
+                </template>
+              </li>
+              <li class="flex items-center justify-between p-3 bg-gradient-to-r from-purple-50 to-indigo-50 rounded-lg">
+                <span class="text-sm font-medium text-slate-700">Monthly profit</span>
+                <template x-if="cardsLoading">
+                  <div class="skeleton lg"></div>
+                </template>
+                <template x-if="!cardsLoading">
+                  <strong class="text-lg font-bold text-purple-700" x-text="formatCurrency(monthlyProfit)"></strong>
+                </template>
+              </li>
+              <li class="flex items-center justify-between p-3 bg-gradient-to-r from-amber-50 to-orange-50 rounded-lg">
+                <span class="text-sm font-medium text-slate-700">Avg profit / bike</span>
+                <template x-if="cardsLoading">
+                  <div class="skeleton md"></div>
+                </template>
+                <template x-if="!cardsLoading">
+                  <strong class="text-lg font-bold text-amber-700" x-text="formatCurrency(avgProfitPerBike)"></strong>
+                </template>
+              </li>
+            </ul>
+          </div>
+
           <div class="mt-5 md:mt-6 p-5 md:p-6 rounded-xl bg-white shadow-card border border-slate-100">
             <div class="flex flex-col md:flex-row items-start md:items-center justify-between mb-4 gap-3">
               <h3 class="font-semibold text-base md:text-lg text-slate-800">Monthly Sales Performance</h3>
@@ -537,7 +584,7 @@
         </div>
 
         <aside class="lg:col-span-1">
-          <div class="p-5 md:p-6 rounded-xl bg-white shadow-card border border-slate-100">
+          <div class="p-5 md:p-6 rounded-xl bg-white shadow-card border border-slate-100 hidden lg:block">
             <div class="flex items-center gap-2 mb-4">
               <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-indigo-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
