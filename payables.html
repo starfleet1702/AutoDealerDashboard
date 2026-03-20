@@ -326,6 +326,61 @@
       </div>
     </div>
 
+    <!-- Create Party Modal -->
+    <div id="create-party-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+      <div class="bg-white rounded-lg p-6 max-w-md w-full mx-4">
+        <div class="flex items-center justify-between mb-4">
+          <h3 class="font-bold text-lg">Create Vendor</h3>
+          <button id="close-create-party-modal" class="text-2xl text-slate-400 hover:text-slate-600">&times;</button>
+        </div>
+        <form id="create-party-form" class="space-y-3">
+          <div>
+            <label class="block text-sm font-medium text-slate-700">Name *</label>
+            <input id="party-name-input" type="text" required class="w-full mt-1 p-2 border rounded" placeholder="Vendor name" />
+          </div>
+
+          <div>
+            <label class="block text-sm font-medium text-slate-700">Party Type *</label>
+            <select id="party-type-input" required class="w-full mt-1 p-2 border rounded">
+              <option value="">Select party type</option>
+              <option value="customer">Customer</option>
+              <option value="vendor">Vendor</option>
+              <option value="dealer">Dealer</option>
+              <option value="other">Other</option>
+            </select>
+          </div>
+
+          <div>
+            <label class="block text-sm font-medium text-slate-700">Phone</label>
+            <input id="party-phone-input" type="text" class="w-full mt-1 p-2 border rounded" placeholder="Phone number" />
+          </div>
+
+          <div>
+            <label class="block text-sm font-medium text-slate-700">Email</label>
+            <input id="party-email-input" type="email" class="w-full mt-1 p-2 border rounded" placeholder="Email address" />
+          </div>
+
+          <div>
+            <label class="block text-sm font-medium text-slate-700">Address</label>
+            <input id="party-address-input" type="text" class="w-full mt-1 p-2 border rounded" placeholder="Address" />
+          </div>
+
+          <div>
+            <label class="block text-sm font-medium text-slate-700">Notes</label>
+            <textarea id="party-notes-input" rows="2" class="w-full mt-1 p-2 border rounded" placeholder="Additional notes"></textarea>
+          </div>
+
+          <div id="create-party-error" class="text-sm text-red-600"></div>
+          <div id="create-party-status" class="text-sm text-slate-600"></div>
+
+          <div class="flex gap-3 mt-4">
+            <button type="submit" class="flex-1 px-4 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700">Create</button>
+            <button type="button" id="cancel-create-party-btn" class="flex-1 px-4 py-2 bg-slate-300 text-slate-700 rounded hover:bg-slate-400">Cancel</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
     <script>
       function toggleMobileMenu() {
         const overlay = document.getElementById('mobile-menu-overlay');

@@ -60,18 +60,18 @@ async function initPartySearch() {
     dropdown.classList.remove('hidden');
   });
 
-  // Handle create new vendor
-  createOption.addEventListener('click', async () => {
+  // Handle create new vendor - open modal
+  createOption.addEventListener('click', () => {
     const newName = qs('#party-search').value.trim();
-    const newParty = await createParty({
-      name: newName,
-      party_type: null
-    });
-    
-    if (newParty) {
-      selectParty(newParty);
-      dropdown.classList.add('hidden');
-    }
+    qs('#party-name-input').value = newName;
+    qs('#party-type-input').value = 'vendor'; // Default to vendor for payables
+    qs('#party-phone-input').value = '';
+    qs('#party-email-input').value = '';
+    qs('#party-address-input').value = '';
+    qs('#party-notes-input').value = '';
+    qs('#create-party-error').textContent = '';
+    qs('#create-party-status').textContent = '';
+    qs('#create-party-modal').classList.remove('hidden');
   });
 
   // Close dropdown on outside click
@@ -80,6 +80,93 @@ async function initPartySearch() {
       dropdown.classList.add('hidden');
     }
   });
+}
+
+/**
+ * Initialize party creation modal
+ */
+function initCreatePartyModal() {
+  const modal = qs('#create-party-modal');
+  const form = qs('#create-party-form');
+  const closeBtn = qs('#close-create-party-modal');
+  const cancelBtn = qs('#cancel-create-party-btn');
+
+  closeBtn.addEventListener('click', () => {
+    modal.classList.add('hidden');
+  });
+
+  cancelBtn.addEventListener('click', () => {
+    modal.classList.add('hidden');
+  });
+
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    await onCreatePartySubmit();
+  });
+
+  // Close modal when clicking outside
+  modal.addEventListener('click', (e) => {
+    if (e.target === modal) {
+      modal.classList.add('hidden');
+    }
+  });
+}
+
+/**
+ * Handle party creation form submission
+ */
+async function onCreatePartySubmit() {
+  const name = qs('#party-name-input').value.trim();
+  const partyType = qs('#party-type-input').value.trim();
+  const phone = qs('#party-phone-input').value.trim() || null;
+  const email = qs('#party-email-input').value.trim() || null;
+  const address = qs('#party-address-input').value.trim() || null;
+  const notes = qs('#party-notes-input').value.trim() || null;
+  const errorDiv = qs('#create-party-error');
+  const statusDiv = qs('#create-party-status');
+
+  errorDiv.textContent = '';
+  statusDiv.textContent = '';
+
+  if (!name) {
+    errorDiv.textContent = 'Vendor name is required';
+    return;
+  }
+
+  if (!partyType) {
+    errorDiv.textContent = 'Party type is required';
+    return;
+  }
+
+  statusDiv.textContent = 'Creating vendor...';
+  statusDiv.className = 'text-sm text-slate-600';
+
+  const newParty = await createParty({
+    name: name,
+    party_type: partyType,
+    phone: phone,
+    email: email,
+    address: address,
+    notes: notes
+  });
+
+  if (newParty) {
+    statusDiv.textContent = 'Vendor created successfully!';
+    statusDiv.className = 'text-sm text-green-600';
+
+    // Reload all parties and update dropdown
+    allParties = await fetchAllParties();
+    qs('#party-search').value = name;
+    selectParty(newParty);
+    qs('#party-dropdown').classList.add('hidden');
+
+    // Close modal after brief delay
+    setTimeout(() => {
+      qs('#create-party-modal').classList.add('hidden');
+    }, 800);
+  } else {
+    errorDiv.textContent = 'Failed to create vendor. Please try again.';
+  }
 }
 
 /**
@@ -339,10 +426,10 @@ async function onSubmit(ev){
 
   // Get or create party if not selected via dropdown
   if (!partyId) {
-    const newParty = await createParty({ name: partySearch, party_type: null });
+    const newParty = await createParty({ name: partySearch, party_type: 'vendor' });
     
     if (!newParty) {
-      status.textContent = 'Failed to create party';
+      status.textContent = 'Failed to create vendor';
       status.className = 'text-sm text-red-600';
       return;
     }
@@ -642,6 +729,9 @@ function init(){
 
   // Initialize party search dropdown
   initPartySearch();
+
+  // Initialize create party modal
+  initCreatePartyModal();
 
   // Filter buttons
   qs('#filter-pending').addEventListener('click', () => {

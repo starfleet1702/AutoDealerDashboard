@@ -35,7 +35,7 @@ todo
 1. DONE - loaders for quick stats numbers
 2. DONE - Receivables on left nav in dashboard doesn't work when clicking on it
 3. DONE - Sales page - option to see sold bikes
-4. create new party not working
+4. WIP - create new party not working
 5. Make Look and feel of whole website same
 6. Add cost not working - 100 rs grey bike
 7. Update RLS everywhere
