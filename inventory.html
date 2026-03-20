@@ -167,7 +167,7 @@
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
                   </button>
                 </div>
-                <button type="button" @click="showForm = !showForm; if(showForm){ editingId = null; $nextTick(()=> $refs.invForm?.scrollIntoView({behavior:'smooth'})) }" class="btn-primary text-sm py-2 px-4 flex items-center gap-1">
+                <button type="button" @click="toggleAddBikeForm()" class="btn-primary text-sm py-2 px-4 flex items-center gap-1">
                   <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" /></svg>
                   Add Bike
                 </button>

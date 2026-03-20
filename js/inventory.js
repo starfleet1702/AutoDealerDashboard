@@ -193,6 +193,25 @@ window.inventory = function(){
       this.searchQuery = '';
       this.filterBikes();
     },
+    toggleAddBikeForm(){
+      this.showForm = !this.showForm;
+      if (this.showForm) {
+        this.editingId = null;
+        // Scroll form into view on mobile, accounting for sticky header
+        this.$nextTick(() => {
+          const invForm = document.getElementById('inventory-form');
+          if (invForm) {
+            const header = document.querySelector('header.header-glass');
+            const headerHeight = header ? header.offsetHeight : 0;
+            const elementPosition = invForm.getBoundingClientRect().top + window.scrollY;
+            window.scrollTo({
+              top: elementPosition - headerHeight - 20,
+              behavior: 'smooth'
+            });
+          }
+        });
+      }
+    },
     addCost(){ this.form.costs.push({ category:'repair', amount:0, date:new Date().toISOString().slice(0,10), notes:'' }) },
     removeCost(i){ this.form.costs.splice(i,1) },
     async onSubmit(){
@@ -226,6 +245,57 @@ window.inventory = function(){
           return;
         }
         console.log('Bike updated successfully:', data);
+        
+        // Handle costs update
+        if (bike.costs && bike.costs.length > 0) {
+          // Separate new costs (no id) from existing costs (with id)
+          const newCosts = bike.costs.filter(c => !c.id);
+          const existingCosts = bike.costs.filter(c => c.id);
+          
+          // Insert new costs
+          if (newCosts.length > 0) {
+            const costsPayload = newCosts.map(c => ({
+              bike_id: this.editingId,
+              category: c.category,
+              amount: c.amount || 0,
+              date: c.date || null,
+              notes: c.notes || null
+            }));
+            const { error: insertCostErr } = await supabase.from('bike_costs').insert(costsPayload);
+            if (insertCostErr) console.warn('Failed to insert new bike costs:', insertCostErr);
+          }
+          
+          // Update existing costs
+          for (const cost of existingCosts) {
+            const { error: updateCostErr } = await supabase.from('bike_costs')
+              .update({
+                category: cost.category,
+                amount: cost.amount || 0,
+                date: cost.date || null,
+                notes: cost.notes || null
+              })
+              .eq('id', cost.id);
+            if (updateCostErr) console.warn('Failed to update bike cost:', updateCostErr);
+          }
+        }
+        
+        // Delete removed costs (get existing costs and delete those not in current form)
+        try {
+          const { data: existingCosts } = await supabase
+            .from('bike_costs')
+            .select('id')
+            .eq('bike_id', this.editingId);
+          
+          const currentCostIds = new Set(bike.costs.filter(c => c.id).map(c => c.id));
+          const costsToDelete = (existingCosts || []).filter(c => !currentCostIds.has(c.id));
+          
+          for (const cost of costsToDelete) {
+            await supabase.from('bike_costs').delete().eq('id', cost.id);
+          }
+        } catch (e) {
+          console.warn('Error deleting removed costs:', e);
+        }
+        
         this.success = 'Bike updated';
         this.editingId = null;
         this.showForm = false;
@@ -238,9 +308,35 @@ window.inventory = function(){
       const res = await window.handleAddBike({ bike, setError: msg => { this.error=msg }, setSuccess: msg => { this.success=msg; this.showForm=false; this.load(); this.resetForm() }, setLoading: v => this.loading = v });
       if (res.error) return;
     },
-    editBike(bike){
+    async editBike(bike){
       this.editingId = bike.id;
       this.showForm = true;
+      
+      // Load existing costs from database
+      let costs = [];
+      try {
+        const supabase = await getSupabaseClient();
+        if (supabase) {
+          const { data: costData, error: costErr } = await supabase
+            .from('bike_costs')
+            .select('id,category,amount,date,notes')
+            .eq('bike_id', bike.id);
+          if (costErr) {
+            console.warn('Failed to load bike costs:', costErr);
+          } else {
+            costs = (costData || []).map(c => ({
+              id: c.id,
+              category: c.category,
+              amount: c.amount,
+              date: c.date,
+              notes: c.notes || ''
+            }));
+          }
+        }
+      } catch (e) {
+        console.warn('Error loading costs:', e);
+      }
+      
       this.form = {
         model: bike.model,
         year: bike.year,
@@ -251,9 +347,23 @@ window.inventory = function(){
         purchase_date: bike.purchase_date,
         sell_date: bike.sell_date,
         notes: bike.notes,
-        costs: [], // not loaded for edit yet
+        costs: costs,
         registration_number: bike.registration_number
       };
+      
+      // Scroll form into view on mobile, accounting for sticky header
+      this.$nextTick(() => {
+        const invForm = document.getElementById('inventory-form');
+        if (invForm) {
+          const header = document.querySelector('header.header-glass');
+          const headerHeight = header ? header.offsetHeight : 0;
+          const elementPosition = invForm.getBoundingClientRect().top + window.scrollY;
+          window.scrollTo({
+            top: elementPosition - headerHeight - 20,
+            behavior: 'smooth'
+          });
+        }
+      });
     },
     resetForm(){ this.form = { model:'', year:'', color:'', buy_price:null, dealer:'', status:'in_stock', purchase_date:new Date().toISOString().slice(0,10), sell_date:'', notes:'', costs:[], registration_number:'' } },
     formatCurrency(v){ if (v === null || v === undefined) return '-'; return '₹' + Number(v).toLocaleString(); },
