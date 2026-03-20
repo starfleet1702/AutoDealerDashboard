@@ -487,6 +487,26 @@
             </template>
           </div>
 
+          <div class="mt-5 md:mt-6 p-5 md:p-6 rounded-xl bg-white shadow-card border border-slate-100">
+            <div class="flex flex-col md:flex-row items-start md:items-center justify-between mb-4 gap-3">
+              <h3 class="font-semibold text-base md:text-lg text-slate-800">Monthly Sales Performance</h3>
+              <div class="flex gap-2">
+                <button @click="updateSalesChartPeriod(3)" :class="{'bg-blue-600 text-white': chartPeriod === 3, 'bg-slate-100 text-slate-700 hover:bg-slate-200': chartPeriod !== 3}" class="text-xs font-medium px-3 py-1 rounded-full transition-all">
+                  3 Months
+                </button>
+                <button @click="updateSalesChartPeriod(6)" :class="{'bg-blue-600 text-white': chartPeriod === 6, 'bg-slate-100 text-slate-700 hover:bg-slate-200': chartPeriod !== 6}" class="text-xs font-medium px-3 py-1 rounded-full transition-all">
+                  6 Months
+                </button>
+                <button @click="updateSalesChartPeriod(12)" :class="{'bg-blue-600 text-white': chartPeriod === 12, 'bg-slate-100 text-slate-700 hover:bg-slate-200': chartPeriod !== 12}" class="text-xs font-medium px-3 py-1 rounded-full transition-all">
+                  12 Months
+                </button>
+              </div>
+            </div>
+            <div class="mt-4 relative h-80">
+              <canvas id="monthlySalesChart"></canvas>
+            </div>
+          </div>
+
           <div class="mt-5 md:mt-6 grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-5">
             <div class="p-5 md:p-6 rounded-xl bg-white shadow-card border border-slate-100">
               <div class="flex items-center justify-between mb-4">
@@ -706,6 +726,7 @@
     </script>
     <script type="module" src="js/notifications.js"></script>
     <link rel="stylesheet" href="css/notifications.css" />
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.js"></script>
     <script type="module" src="js/dashboard.js"></script>
     <script src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
   </body>

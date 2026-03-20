@@ -151,6 +151,11 @@ window.dashboard = function(){
     alerts: [],
     cardsLoading: true,
     cashBankForm: { account:'cash', entry_type:'credit', amount:null, date:new Date().toISOString().slice(0,10), notes:'', status:'' },
+    monthlySalesChart: null,
+    chartInitialized: false,
+    chartPeriod: 3,
+    allSalesData: [],
+    currentMonthlyData: {},
     async load(){
       this.cardsLoading = true;
       try{
@@ -168,9 +173,170 @@ window.dashboard = function(){
         this.avgProfitPerBike = d.avgProfitPerBike;
         this.recentSales = d.recentSales;
         this.alerts = d.alerts;
+        
+        // Initialize monthly charts
+        await this.initializeMonthlyCharts();
       }catch(e){
         console.error('Failed to load dashboard', e);
       }
+    },
+    
+    /**
+     * Initialize combined monthly sales chart
+     */
+    async initializeMonthlyCharts() {
+      const supabase = await getSupabaseClient();
+      if (!supabase) return;
+      
+      try {
+        // Fetch last 12 months of sales data
+        const { data } = await supabase
+          .from('sales')
+          .select('profit, sell_date');
+        
+        // Store raw data for filtering
+        this.allSalesData = data || [];
+        
+        // Render combined chart with default period (3 months). Create chart once.
+        this.renderChartWithPeriod();
+        this.chartInitialized = false; // will be set true when chart actually created
+      } catch (error) {
+        console.error('Error initializing monthly sales chart:', error);
+      }
+    },
+    
+    /**
+     * Update chart period and re-render
+     */
+    updateSalesChartPeriod(months) {
+      this.chartPeriod = months;
+      // Recompute and update chart data in-place (avoid destroying canvas)
+      this.renderChartWithPeriod();
+    },
+    
+    /**
+     * Render chart based on selected period
+     */
+    renderChartWithPeriod() {
+      const now = new Date();
+      const monthlyData = {};
+      
+      // Initialize months based on period
+      for (let i = this.chartPeriod - 1; i >= 0; i--) {
+        const date = new Date(now.getFullYear(), now.getMonth() - i, 1);
+        const monthKey = date.toLocaleString('default', { month: 'short', year: '2-digit' });
+        monthlyData[monthKey] = { units: 0, profit: 0 };
+      }
+      
+      // Count units and sum profit by month
+      if (this.allSalesData) {
+        this.allSalesData.forEach(sale => {
+          const saleDate = new Date(sale.sell_date);
+          const monthKey = saleDate.toLocaleString('default', { month: 'short', year: '2-digit' });
+          if (monthKey in monthlyData) {
+            monthlyData[monthKey].units++;
+            monthlyData[monthKey].profit += sale.profit || 0;
+          }
+        });
+      }
+      
+      // Store data for tooltip access
+      this.currentMonthlyData = monthlyData;
+      
+      // Render combined chart
+      this.renderMonthlySalesChart(monthlyData);
+    },
+    
+    /**
+     * Render combined monthly sales chart with units and profit in tooltip.
+     * Always uses Chart.getChart(canvas) as the source of truth so Alpine proxy
+     * state loss never causes a "Canvas already in use" crash.
+     */
+    renderMonthlySalesChart(monthlyData) {
+      const canvas = document.getElementById('monthlySalesChart');
+      if (!canvas || !window.Chart) return;
+
+      const labels = Object.keys(monthlyData);
+      const unitData = labels.map(m => monthlyData[m].units);
+      const profitData = labels.map(m => monthlyData[m].profit);
+
+      const barColor = 'rgba(59, 130, 246, 0.8)';
+      const bgColors = labels.map((_, i) =>
+        ['rgba(59, 130, 246, 0.8)', 'rgba(37, 99, 235, 0.8)', 'rgba(29, 78, 216, 0.8)'][i % 3]
+      );
+
+      // Use Chart.getChart() as the single source of truth — Alpine proxy can lose object refs
+      const existing = (typeof window.Chart.getChart === 'function')
+        ? window.Chart.getChart(canvas)
+        : null;
+
+      if (existing) {
+        // Update in-place — never destroy/recreate
+        existing.data.labels = labels;
+        existing.data.datasets[0].data = unitData;
+        existing.data.datasets[0].backgroundColor = bgColors;
+        existing._profitData = profitData;
+        existing.update('none'); // 'none' = skip all animations immediately
+        return;
+      }
+
+      // First render: create the chart
+      const chart = new window.Chart(canvas, {
+        type: 'bar',
+        data: {
+          labels,
+          datasets: [{
+            label: 'Units Sold',
+            data: unitData,
+            backgroundColor: bgColors,
+            borderRadius: 8,
+            borderSkipped: false,
+            hoverBackgroundColor: 'rgba(59, 130, 246, 1)',
+          }]
+        },
+        options: {
+          animation: false,          // disable all animations — prevents animator/canvas races
+          responsive: true,
+          maintainAspectRatio: true,
+          plugins: {
+            legend: {
+              display: true,
+              labels: { font: { size: 12, weight: '500' }, color: '#64748b', padding: 15 }
+            },
+            tooltip: {
+              backgroundColor: 'rgba(15, 23, 42, 0.9)',
+              titleFont: { size: 13, weight: '600' },
+              bodyFont: { size: 12 },
+              padding: 12,
+              borderRadius: 8,
+              displayColors: false,
+              callbacks: {
+                label(context) {
+                  const units = context.parsed.y;
+                  const profit = (context.chart._profitData || [])[context.dataIndex] || 0;
+                  return [
+                    `Units Sold: ${units}`,
+                    `Total Profit: ₹ ${Number(profit).toLocaleString('en-IN')}`
+                  ];
+                }
+              }
+            }
+          },
+          scales: {
+            y: {
+              beginAtZero: true,
+              grid: { color: 'rgba(225, 232, 239, 0.5)', drawBorder: false },
+              ticks: { font: { size: 11 }, color: '#94a3b8', stepSize: 1 },
+              title: { display: true, text: 'Units Sold' }
+            },
+            x: {
+              grid: { display: false, drawBorder: false },
+              ticks: { font: { size: 11 }, color: '#94a3b8' }
+            }
+          }
+        }
+      });
+      chart._profitData = profitData;
     },
     async onCashBankAdjust(){
       this.cashBankForm.status = '';
