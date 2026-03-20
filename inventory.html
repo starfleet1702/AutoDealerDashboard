@@ -226,7 +226,7 @@
                       Edit
                     </button>
                     <template x-if="b.status !== 'sold'">
-                      <button type="button" @click="openMarkSoldModal(b)" class="flex-1 px-3 py-2 text-[13px] text-white bg-green-600 hover:bg-green-700 rounded-lg font-semibold transition-colors">
+                      <button type="button" @click.prevent="openMarkSoldModal(b)" class="flex-1 px-3 py-2 text-[13px] text-white bg-green-600 hover:bg-green-700 rounded-lg font-semibold transition-colors">
                         Mark Sold
                       </button>
                     </template>
@@ -379,7 +379,6 @@
           </section>
         </div>
       </div>
-      </div>
 
       <!-- Mark Sold Modal -->
       <template x-if="showMarkSoldModal">
@@ -394,7 +393,7 @@
           </button>
         </div>
 
-        <form @submit.prevent="submitMarkSold" class="p-6 space-y-4">
+        <form @submit.prevent="submitMarkSold()" class="p-6 space-y-4">
           <!-- Bike Info (Read-only) -->
           <div class="bg-slate-50 p-4 rounded-lg">
             <div class="font-semibold text-slate-700 mb-2" x-text="markSoldBike?.model"></div>

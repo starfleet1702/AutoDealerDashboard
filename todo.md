@@ -48,5 +48,5 @@ todo
 17. Update RLS everywhere
 18. DONE - dummy payable add 50k , insallement payments 
 19. DONE - remove nk - dummy - 50k
-20. Delete vehicle - delete dummy
+20. DONE - Delete vehicle - delete dummy
 
