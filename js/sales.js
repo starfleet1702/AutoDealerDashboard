@@ -107,7 +107,7 @@ function updateStatsDisplay(stats) {
   // Create stats HTML with colorful cards
   const statsHTML = `
     <div class="dashboard-card p-4 md:p-6 relative">
-      <div class="stat-icon stat-icon-sales absolute top-4 right-4 md:top-5 md:right-5">
+      <div class="stat-icon stat-icon-sales absolute top-4 right-4 md:top-2 md:right-2">
         <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 md:h-6 md:w-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
         </svg>
@@ -119,7 +119,7 @@ function updateStatsDisplay(stats) {
       <div class="dashboard-meta mt-4">Monthly revenue</div>
     </div>
     <div class="dashboard-card p-4 md:p-6 relative">
-      <div class="stat-icon stat-icon-profit absolute top-4 right-4 md:top-5 md:right-5">
+      <div class="stat-icon stat-icon-profit absolute top-4 right-4 md:top-2 md:right-2">
         <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 md:h-6 md:w-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
         </svg>
@@ -131,7 +131,7 @@ function updateStatsDisplay(stats) {
       <div class="dashboard-meta mt-4">Revenue minus cost</div>
     </div>
     <div class="dashboard-card p-4 md:p-6 relative">
-      <div class="stat-icon stat-icon-units absolute top-4 right-4 md:top-5 md:right-5">
+      <div class="stat-icon stat-icon-units absolute top-4 right-4 md:top-2 md:right-2">
         <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 md:h-6 md:w-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
         </svg>
@@ -143,7 +143,7 @@ function updateStatsDisplay(stats) {
       <div class="dashboard-meta mt-4">Number of bikes</div>
     </div>
     <div class="dashboard-card p-4 md:p-6 relative">
-      <div class="stat-icon stat-icon-avg absolute top-4 right-4 md:top-5 md:right-5">
+      <div class="stat-icon stat-icon-avg absolute top-4 right-4 md:top-2 md:right-2">
         <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 md:h-6 md:w-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
         </svg>
