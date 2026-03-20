@@ -48,15 +48,36 @@ window.handleAddBike = async ({ bike, setError, setSuccess, setLoading }) => {
     if (insertErr) {
       setLoading(false);
       setError(insertErr.message || 'Failed to insert bike');
+      console.error('Bike insert error details:', JSON.stringify(insertErr, null, 2));
       if (window.notify && window.notify.error) window.notify.error('Add failed: ' + (insertErr.message || 'insert error'));
       return { data: null, error: insertErr };
     }
+    console.log('Bike inserted with ID:', inserted.id, 'Full bike data:', inserted);
 
     // insert costs if any
     if (bike.costs && bike.costs.length) {
-      const costsPayload = bike.costs.map(c => ({ bike_id: inserted.id, category: c.category, amount: c.amount || 0, date: c.date || null, notes: c.notes || null }));
-      const { error: costErr } = await supabase.from('bike_costs').insert(costsPayload);
-      if (costErr) console.warn('Failed to insert bike_costs', costErr);
+      const costsPayload = bike.costs.map(c => {
+        const costObj = {
+          bike_id: inserted.id,
+          category: c.category || 'other',
+          amount: Number(c.amount) || 0,
+          notes: c.notes || null
+        };
+        // Only include date if it's a valid date string, otherwise let DB default apply
+        if (c.date && c.date.trim()) {
+          costObj.date = c.date;
+        }
+        return costObj;
+      });
+      console.log('Inserting bike costs:', costsPayload);
+      const { data: insertedCosts, error: costErr } = await supabase.from('bike_costs').insert(costsPayload).select();
+      if (costErr) {
+        console.error('Failed to insert bike_costs. Error:', costErr);
+        console.error('Error details:', JSON.stringify(costErr, null, 2));
+      } else {
+        console.log('Costs inserted successfully:', insertedCosts);
+        console.log('Verifying insert by fetching:', await supabase.from('bike_costs').select().eq('bike_id', inserted.id));
+      }
     }
 
     setLoading(false);
@@ -247,47 +268,75 @@ window.inventory = function(){
         console.log('Bike updated successfully:', data);
         
         // Handle costs update
-        if (bike.costs && bike.costs.length > 0) {
-          // Separate new costs (no id) from existing costs (with id)
-          const newCosts = bike.costs.filter(c => !c.id);
-          const existingCosts = bike.costs.filter(c => c.id);
-          
-          // Insert new costs
-          if (newCosts.length > 0) {
-            const costsPayload = newCosts.map(c => ({
+        const formCosts = Array.isArray(bike.costs) ? bike.costs : [];
+        const newCosts = formCosts.filter(c => !c.id);
+        const existingCosts = formCosts.filter(c => c.id);
+        const costIdsToKeep = new Set(existingCosts.map(c => c.id));
+
+        // Insert new costs
+        if (newCosts.length > 0) {
+          const costsPayload = newCosts.map(c => {
+            const costObj = {
               bike_id: this.editingId,
-              category: c.category,
-              amount: c.amount || 0,
-              date: c.date || null,
+              category: c.category || 'other',
+              amount: Number(c.amount) || 0,
               notes: c.notes || null
-            }));
-            const { error: insertCostErr } = await supabase.from('bike_costs').insert(costsPayload);
-            if (insertCostErr) console.warn('Failed to insert new bike costs:', insertCostErr);
+            };
+            if (c.date && c.date.trim()) {
+              costObj.date = c.date;
+            }
+            return costObj;
+          });
+
+          const { data: insertedNewCosts, error: insertCostErr } = await supabase
+            .from('bike_costs')
+            .insert(costsPayload)
+            .select('id');
+
+          if (insertCostErr) {
+            console.error('Failed to insert new bike costs:', insertCostErr);
+            this.error = 'Failed to add costs: ' + insertCostErr.message;
+            this.loading = false;
+            if (window.notify && window.notify.error) window.notify.error('Cost insert failed: ' + insertCostErr.message);
+            return;
           }
-          
-          // Update existing costs
-          for (const cost of existingCosts) {
-            const { error: updateCostErr } = await supabase.from('bike_costs')
-              .update({
-                category: cost.category,
-                amount: cost.amount || 0,
-                date: cost.date || null,
-                notes: cost.notes || null
-              })
-              .eq('id', cost.id);
-            if (updateCostErr) console.warn('Failed to update bike cost:', updateCostErr);
+
+          (insertedNewCosts || []).forEach(c => costIdsToKeep.add(c.id));
+        }
+
+        // Update existing costs
+        for (const cost of existingCosts) {
+          const updateObj = {
+            category: cost.category || 'other',
+            amount: Number(cost.amount) || 0,
+            notes: cost.notes || null
+          };
+          if (cost.date && cost.date.trim()) {
+            updateObj.date = cost.date;
+          }
+
+          const { error: updateCostErr } = await supabase
+            .from('bike_costs')
+            .update(updateObj)
+            .eq('id', cost.id);
+
+          if (updateCostErr) {
+            console.error('Failed to update bike cost:', updateCostErr);
+            this.error = 'Failed to update costs: ' + updateCostErr.message;
+            this.loading = false;
+            if (window.notify && window.notify.error) window.notify.error('Cost update failed: ' + updateCostErr.message);
+            return;
           }
         }
-        
-        // Delete removed costs (get existing costs and delete those not in current form)
+
+        // Delete removed costs (delete those not present in the final keep-set)
         try {
           const { data: existingCosts } = await supabase
             .from('bike_costs')
             .select('id')
             .eq('bike_id', this.editingId);
-          
-          const currentCostIds = new Set(bike.costs.filter(c => c.id).map(c => c.id));
-          const costsToDelete = (existingCosts || []).filter(c => !currentCostIds.has(c.id));
+
+          const costsToDelete = (existingCosts || []).filter(c => !costIdsToKeep.has(c.id));
           
           for (const cost of costsToDelete) {
             await supabase.from('bike_costs').delete().eq('id', cost.id);

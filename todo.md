@@ -45,3 +45,4 @@ todo
 11. DONE - Sales graph sales by month on dashboard
 12. DONE - Channel pie chart breakdown
 13. graph 3M -> 6M  -> 12 M Not working
+14. Add bike cost not working while editing bike
