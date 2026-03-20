@@ -160,7 +160,7 @@ window.inventory = function(){
         const ids = bikes.map(b => b.id).filter(Boolean);
         let costs = [];
         if (ids.length) {
-          const { data: costData, error: costErr } = await supabase.from('bike_costs').select('bike_id,amount').in('bike_id', ids);
+          const { data: costData, error: costErr } = await supabase.from('bike_costs').select('bike_id,amount,notes,category,id').in('bike_id', ids);
           if (costErr) throw costErr;
           costs = costData || [];
         }
@@ -340,7 +340,7 @@ window.inventory = function(){
           const { data: insertedNewCosts, error: insertCostErr } = await supabase
             .from('bike_costs')
             .insert(costsPayload)
-            .select('id');
+            .select();
 
           if (insertCostErr) {
             console.error('Failed to insert new bike costs:', insertCostErr);

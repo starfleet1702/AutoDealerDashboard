@@ -349,7 +349,7 @@
                 <h3 class="text-sm font-medium text-slate-700">Bike Costs</h3>
                 <template x-for="(c, i) in form.costs" :key="i">
                   <div class="mt-2 grid grid-cols-12 gap-2 items-center">
-                    <select x-model="c.category" class="col-span-4 input">
+                    <select x-model="c.category" class="col-span-3 input">
                       <option value="transport">transport</option>
                       <option value="repair">repair</option>
                       <option value="parts">parts</option>
@@ -357,8 +357,9 @@
                       <option value="fuel">fuel</option>
                       <option value="other">other</option>
                     </select>
-                    <input x-model.number="c.amount" type="number" step="0.01" min="0" class="col-span-4 input" placeholder="amount" />
+                    <input x-model.number="c.amount" type="number" step="0.01" min="0" class="col-span-3 input" placeholder="amount" />
                     <input x-model="c.date" type="date" class="col-span-3 input" />
+                    <input x-model="c.notes" type="text" class="col-span-2 input" placeholder="Notes (optional)" />
                     <button type="button" @click="removeCost(i)" class="col-span-1 text-red-500">✕</button>
                   </div>
                 </template>
