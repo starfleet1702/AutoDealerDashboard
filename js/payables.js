@@ -9,6 +9,16 @@ function formatCurrency(n){
   try{ return '₹' + Number(n).toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2}); }catch(e){ return n; }
 }
 
+/** Scroll element into view accounting for sticky header */
+function scrollToElementWithOffset(el, extra = 8) {
+  if (!el) return;
+  const header = document.querySelector('.header-glass');
+  const headerHeight = header ? header.offsetHeight : 80;
+  const rect = el.getBoundingClientRect();
+  const top = window.scrollY + rect.top - headerHeight - extra;
+  window.scrollTo({ top: Math.max(0, top), behavior: 'smooth' });
+}
+
 function showPaymentLoader(){
   const overlay = qs('#payment-modal-overlay');
   const submitBtn = qs('#payment-submit-btn');
@@ -413,7 +423,8 @@ async function onEdit(ev){
   if (panel) panel.classList.remove('hidden');
   
   // Scroll to form
-  qs('#payable-form').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  // Scroll to form panel (account for sticky header) so title + close are visible
+  scrollToElementWithOffset(qs('#payable-form-panel'));
 }
 
 async function onDelete(ev){
@@ -840,7 +851,8 @@ function init(){
     if (panel) panel.classList.remove('hidden');
     // ensure cancel button is available to close the form from bottom
     const cancel = qs('#cancel-btn'); if (cancel) cancel.classList.remove('hidden');
-    qs('#payable-form').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    // scroll so the form panel (title + close) is visible below the sticky header
+    scrollToElementWithOffset(qs('#payable-form-panel'));
   });
   // Payment modal handlers
   const paymentModal = qs('#payment-modal');
