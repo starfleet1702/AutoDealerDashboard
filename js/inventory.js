@@ -134,6 +134,7 @@ window.inventory = function(){
     markSoldLoading: false,
     markSoldError: '',
     markSoldSuccess: '',
+    deleteLoading: false,
     modelHistory: JSON.parse(localStorage.getItem('modelHistory')||'[]'),
     colorHistory: JSON.parse(localStorage.getItem('colorHistory')||'[]'),
     dealerHistory: JSON.parse(localStorage.getItem('dealerHistory')||'[]'),
@@ -478,6 +479,37 @@ window.inventory = function(){
       };
       this.markSoldError = '';
       this.markSoldSuccess = '';
+    },
+    async deleteBike() {
+      const bikeName = this.form.model || 'this bike';
+      const confirmed = window.confirm(`Delete "${bikeName}"?\n\nThis will permanently delete the bike and all associated costs. This cannot be undone.`);
+      if (!confirmed) return;
+
+      this.deleteLoading = true;
+      this.error = '';
+      try {
+        const supabase = await getSupabaseClient();
+        if (!supabase) { this.error = 'Supabase not configured'; this.deleteLoading = false; return; }
+
+        // Delete associated costs first
+        const { error: costErr } = await supabase.from('bike_costs').delete().eq('bike_id', this.editingId);
+        if (costErr) { this.error = 'Failed to delete costs: ' + costErr.message; this.deleteLoading = false; return; }
+
+        // Delete the bike
+        const { error: bikeErr } = await supabase.from('bikes').delete().eq('id', this.editingId);
+        if (bikeErr) { this.error = 'Failed to delete bike: ' + bikeErr.message; this.deleteLoading = false; return; }
+
+        // Close form and reload
+        this.editingId = null;
+        this.showForm = false;
+        this.resetForm();
+        this.deleteLoading = false;
+        if (window.notify && window.notify.success) window.notify.success('Bike deleted successfully');
+        await this.load();
+      } catch (err) {
+        this.error = err.message || 'Failed to delete bike';
+        this.deleteLoading = false;
+      }
     },
     async submitMarkSold() {
       this.markSoldError = '';
