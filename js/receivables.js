@@ -377,6 +377,9 @@ async function onEdit(ev){
   // Update UI
   qs('#form-title').textContent = 'Edit Receivable';
   qs('#cancel-btn').classList.remove('hidden');
+  // ensure form panel is visible when editing
+  const panel = qs('#receivable-form-panel');
+  if (panel) panel.classList.remove('hidden');
   
   // Scroll to form
   qs('#receivable-form').scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -716,6 +719,9 @@ function resetForm() {
   qs('#cancel-btn').classList.add('hidden');
   editingId = null;
   selectedPartyId = null;
+  // hide form panel after reset (list-first UX)
+  const panel = qs('#receivable-form-panel');
+  if (panel) panel.classList.add('hidden');
 }
 
 function onCancel() {
@@ -732,6 +738,17 @@ function init(){
   const cancelBtn = qs('#cancel-btn');
   cancelBtn.addEventListener('click', onCancel);
 
+  // Open form button (list-first UX)
+  const openBtn = qs('#open-receivable-form');
+  if (openBtn) openBtn.addEventListener('click', () => {
+    resetForm();
+    const panel = qs('#receivable-form-panel');
+    if (panel) panel.classList.remove('hidden');
+    // ensure cancel button is available to close the form from bottom
+    const cancel = qs('#cancel-btn'); if (cancel) cancel.classList.remove('hidden');
+    qs('#receivable-form').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  });
+
   // Payment modal handlers
   const paymentModal = qs('#payment-modal');
   qs('#payment-form').addEventListener('submit', onPaymentSubmit);
@@ -741,6 +758,10 @@ function init(){
   qs('#cancel-payment-btn').addEventListener('click', () => {
     paymentModal.classList.add('hidden');
   });
+
+  // Close form (top-right) handler
+  const closeFormBtn = qs('#close-receivable-form');
+  if (closeFormBtn) closeFormBtn.addEventListener('click', resetForm);
 
   // Ledger modal handler
   qs('#close-ledger-modal').addEventListener('click', () => {
