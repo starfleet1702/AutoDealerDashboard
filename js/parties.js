@@ -16,6 +16,16 @@ import { fetchPartyTransactions } from './partyTransactionLedger.js';
 function qs(sel) { return document.querySelector(sel); }
 function qsa(sel) { return document.querySelectorAll(sel); }
 
+/** Scroll element into view accounting for sticky header */
+function scrollToElementWithOffset(el, extra = 8) {
+  if (!el) return;
+  const header = document.querySelector('.header-glass');
+  const headerHeight = header ? header.offsetHeight : 80;
+  const rect = el.getBoundingClientRect();
+  const top = window.scrollY + rect.top - headerHeight - extra;
+  window.scrollTo({ top: Math.max(0, top), behavior: 'smooth' });
+}
+
 function formatCurrency(n){
   try{ return '₹' + Number(n).toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2}); }catch(e){ return n; }
 }
@@ -135,9 +145,9 @@ async function onEdit(ev) {
   // Update UI
   qs('#form-title').textContent = 'Edit Party';
   qs('#cancel-btn').classList.remove('hidden');
-  
-  // Scroll to form
-  qs('#party-form').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  // ensure form panel visible and scroll so title+close are visible
+  const panel = qs('#party-form-panel'); if (panel) panel.classList.remove('hidden');
+  scrollToElementWithOffset(qs('#party-form-panel'));
 }
 
 /**
@@ -293,6 +303,9 @@ function resetForm() {
   qs('#form-title').textContent = 'Add Party';
   qs('#cancel-btn').classList.add('hidden');
   editingId = null;
+  // hide form panel after reset (list-first UX)
+  const panel = qs('#party-form-panel');
+  if (panel) panel.classList.add('hidden');
 }
 
 /**
@@ -312,6 +325,20 @@ function init() {
   // Form submission
   qs('#party-form').addEventListener('submit', onSubmit);
   qs('#cancel-btn').addEventListener('click', onCancel);
+
+  // Open form button (list-first UX)
+  const openBtn = qs('#open-party-form');
+  if (openBtn) openBtn.addEventListener('click', () => {
+    resetForm();
+    const panel = qs('#party-form-panel'); if (panel) panel.classList.remove('hidden');
+    const cancel = qs('#cancel-btn'); if (cancel) cancel.classList.remove('hidden');
+    // scroll so the form panel (title + close) is visible
+    scrollToElementWithOffset(qs('#party-form-panel'));
+  });
+
+  // Close form (top-right)
+  const closeBtn = qs('#close-party-form');
+  if (closeBtn) closeBtn.addEventListener('click', resetForm);
 
   // Search
   qs('#search-box').addEventListener('input', applyFiltersAndRender);
