@@ -251,6 +251,17 @@
   transform: scale(1.1);
 }
 
+.reg-last4 {
+  display: inline-block;
+  margin-left: 2px;
+  padding: 0 4px;
+  border-radius: 6px;
+  background: rgba(79, 70, 229, 0.15);
+  color: #3730a3;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
 /* Animations */
 @keyframes fadeInUp {
   from {

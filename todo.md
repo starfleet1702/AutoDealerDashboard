@@ -37,12 +37,12 @@ todo
 3. DONE - Sales page - option to see sold bikes
 4. DONE - create new party not working
 5. Make Look and feel of whole website same
-6. Add cost not working - 100 rs grey bike
+6. DONE - Add cost not working - 100 rs grey bike
 7. Update RLS everywhere
 8. DONE - Filter for in stock, sold on inventory list page
 9. DONE - Name of sold bike should be <Name/Model> first then - <year>
 10. RTO documentation charges - 
 11. DONE - Sales graph sales by month on dashboard
 12. DONE - Channel pie chart breakdown
-13. graph 3M -> 6M  -> 12 M Not working
-14. Add bike cost not working while editing bike
+13. DONE _ graph 3M -> 6M  -> 12 M Not working
+14. DONE - Add bike cost not working while editing bike

@@ -235,9 +235,35 @@ window.inventory = function(){
     },
     addCost(){ this.form.costs.push({ category:'repair', amount:0, date:new Date().toISOString().slice(0,10), notes:'' }) },
     removeCost(i){ this.form.costs.splice(i,1) },
+    sanitizeRegistration(value){
+      return (value || '').toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 10);
+    },
+    isValidRegistration(value){
+      return /^([A-Z]{2}\d{2}[A-Z]{2}\d{4}|\d{4})$/.test(value);
+    },
+    onRegistrationInput(){
+      this.form.registration_number = this.sanitizeRegistration(this.form.registration_number);
+    },
+    formatRegistrationDisplay(value){
+      const reg = this.sanitizeRegistration(value);
+      if (!reg) return '-';
+      if (/^\d{4}$/.test(reg)) {
+        return `<span class="reg-last4">${reg}</span>`;
+      }
+      if (!this.isValidRegistration(reg)) return reg;
+      const prefix = reg.slice(0, 6);
+      const last4 = reg.slice(6);
+      return `${prefix}<span class="reg-last4">${last4}</span>`;
+    },
     async onSubmit(){
       this.error=''; this.success=''; this.loading=true;
+      this.onRegistrationInput();
       const bike = Object.assign({}, this.form);
+      if (bike.registration_number && !this.isValidRegistration(bike.registration_number)) {
+        this.error = 'Registration format must be either AA00AA0000 (e.g. MH12AB1234) or only last 4 digits (e.g. 1234)';
+        this.loading = false;
+        return;
+      }
       if (this.editingId) {
         // update bike
         const supabase = await getSupabaseClient();
@@ -397,7 +423,7 @@ window.inventory = function(){
         sell_date: bike.sell_date,
         notes: bike.notes,
         costs: costs,
-        registration_number: bike.registration_number
+        registration_number: this.sanitizeRegistration(bike.registration_number)
       };
       
       // Scroll form into view on mobile, accounting for sticky header
